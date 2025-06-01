@@ -14,8 +14,8 @@ struct VideoChatView: View {
     var body: some View {
         ZStack {
             // video
-            VideoPlayer(player: AVPlayer(url: videoURL))
-                .ignoresSafeArea()
+//            VideoPlayer(player: AVPlayer(url: videoURL))
+//                .ignoresSafeArea()
             
             // UI
             VStack {
@@ -33,7 +33,7 @@ struct VideoChatView: View {
                 
                 // Text
                 Text("Now. Tell me 3 things you hear")
-                    .foregroundColor(.white)
+                    .foregroundColor(.black)
                     .font(.system(size: 18, weight: .medium))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 20)
@@ -45,7 +45,7 @@ struct VideoChatView: View {
                     // keyboard
                     Button(action: {}) {
                         Image(systemName: "keyboard")
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .frame(width: 40, height: 40)
                             .background(Color.white.opacity(0.2))
                             .clipShape(Circle())
@@ -56,7 +56,7 @@ struct VideoChatView: View {
                     // mic
                     Button(action: {}) {
                         Image(systemName: "mic.fill")
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .frame(width: 50, height: 50)
                             .background(Color.blue)
                             .clipShape(Circle())
@@ -67,7 +67,7 @@ struct VideoChatView: View {
                     // close
                     Button(action: {}) {
                         Image(systemName: "xmark")
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .frame(width: 40, height: 40)
                             .background(Color.white.opacity(0.2))
                             .clipShape(Circle())
@@ -76,7 +76,7 @@ struct VideoChatView: View {
                     // check
                     Button(action: {}) {
                         Image(systemName: "checkmark")
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .frame(width: 40, height: 40)
                             .background(Color.white.opacity(0.2))
                             .clipShape(Circle())
@@ -88,11 +88,11 @@ struct VideoChatView: View {
         }
     }
     
-    // sample video URL
-    private var videoURL: URL {
-        // ローカルファイルの場合
-        Bundle.main.url(forResource: "sample_video", withExtension: "mp4")!
-    }
+//    // sample video URL
+//    private var videoURL: URL {
+//        // ローカルファイルの場合
+//        Bundle.main.url(forResource: "sample_video", withExtension: "mp4")!
+//    }
 }
 
 struct VideoChatView_Previews: PreviewProvider {

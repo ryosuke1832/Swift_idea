@@ -15,7 +15,6 @@ struct CreateAvatarView: View {
     @State private var isCreating = false
     @State private var validationMessage = ""
     
-    // ✅ 作成完了時のコールバック
     var onAvatarCreated: (() -> Void)? = nil
     
     private let languages = ["English", "Japanese", "Spanish", "French", "German", "Italian"]
@@ -63,9 +62,7 @@ struct CreateAvatarView: View {
         .navigationBarHidden(true)
         .alert("Avatar Created!", isPresented: $showSuccessAlert) {
             Button("OK") {
-                // ✅ アラート閉じる前にコールバック実行
                 onAvatarCreated?()
-                // ✅ 遅延させて確実に親ビューが更新されるようにする
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     presentationMode.wrappedValue.dismiss()
                 }
@@ -331,10 +328,9 @@ struct CreateAvatarView: View {
                 deepfakeReady: false
             )
             
-            // ✅ Add avatar through appViewModel
             appViewModel.avatarManager.addAvatar(newAvatar)
             
-            // ✅ 追加後に明示的にappViewModelの更新を通知
+
             appViewModel.objectWillChange.send()
             
             print("✅ Avatar created: \(newAvatar.name), Total avatars: \(appViewModel.avatarManager.avatars.count)")

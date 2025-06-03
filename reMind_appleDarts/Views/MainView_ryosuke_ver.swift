@@ -3,6 +3,7 @@ import SwiftUI
 struct MainView_ryosuke_ver: View {
     @EnvironmentObject var appViewModel: AppViewModel
     @State private var editingAvatar: Avatar?
+    @State private var refreshTrigger = UUID() // ✅ 強制リフレッシュ用のUUID
     
     var body: some View {
         ZStack{
@@ -26,7 +27,14 @@ struct MainView_ryosuke_ver: View {
                         
                         HStack(spacing: 12) {
                             // Add avatar button - NavigationLink
-                            NavigationLink(destination: CreateAvatarView().environmentObject(appViewModel)) {
+                            NavigationLink(destination: CreateAvatarView()
+                                .environmentObject(appViewModel)
+                                .onDisappear {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                        refreshView()
+                                    }
+                                }
+                            ) {
                                 Text("Add more +")
                                     .font(.caption)
                                     .foregroundColor(.blue)
@@ -37,10 +45,9 @@ struct MainView_ryosuke_ver: View {
                     
                     // List for supporter
                     ScrollView {
-                        VStack(spacing: 12) {
+                        LazyVStack(spacing: 12) {
                             if appViewModel.hasAvatars {
-                                // Display actual user avatars
-                                ForEach(Array(appViewModel.avatarManager.avatars.enumerated()), id: \.element.id) { index, avatar in
+                                ForEach(getCurrentAvatars(), id: \.id) { avatar in
                                     EnhancedAvatarCard(
                                         avatar: avatar,
                                         onStartSession: {
@@ -50,9 +57,13 @@ struct MainView_ryosuke_ver: View {
                                             editingAvatar = avatar
                                         },
                                         onDelete: {
-                                            appViewModel.avatarManager.deleteAvatar(withId: avatar.id)
+                                            deleteAvatarWithRefresh(avatar.id)
                                         }
                                     )
+                                    .transition(.asymmetric(
+                                        insertion: .opacity.combined(with: .slide),
+                                        removal: .opacity.combined(with: .scale(scale: 0.8))
+                                    ))
                                 }
                                 
                             } else {
@@ -61,6 +72,7 @@ struct MainView_ryosuke_ver: View {
                             }
                         }
                     }
+                    .id(refreshTrigger) // ✅
                     
                     Spacer()
                 }
@@ -69,10 +81,41 @@ struct MainView_ryosuke_ver: View {
         .sheet(item: $editingAvatar) { avatar in
             EditAvatarView(avatar: avatar)
                 .environmentObject(appViewModel)
+                .onDisappear {
+                    refreshView()
+                }
         }
         .onAppear {
             // Initialize app when view appears
             appViewModel.initializeApp()
+            refreshView()
+        }
+        .onReceive(appViewModel.avatarManager.$avatars) { _ in
+            print("🔄 Avatar list changed, refreshing view...")
+            refreshView()
+        }
+    }
+    
+    // ✅ 現在のアバターリストを取得する関数
+    private func getCurrentAvatars() -> [Avatar] {
+        return appViewModel.avatarManager.avatars
+    }
+    
+    // ✅ ビューを強制的にリフレッシュする関数
+    private func refreshView() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            refreshTrigger = UUID()
+        }
+    }
+    
+    // ✅ アバター削除＋リフレッシュ
+    private func deleteAvatarWithRefresh(_ avatarId: Int) {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            appViewModel.avatarManager.deleteAvatar(withId: avatarId)
+            // 削除後に強制リフレッシュ
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                refreshView()
+            }
         }
     }
 }
@@ -100,30 +143,6 @@ struct EmptyAvatarStateView: View {
                     .padding(.horizontal, 20)
             }
             
-            // Create Avatar CTA Button
-            NavigationLink(destination: CreateAvatarView().environmentObject(appViewModel)) {
-                Text("Create Your First Avatar")
-                    .font(.headline)
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.primaryGreen)
-                    .cornerRadius(12)
-            }
-            .padding(.horizontal, 40)
-            
-            // Demo Data Button (for development)
-            Button(action: {
-                appViewModel.createDemoData()
-            }) {
-                Text("Load Demo Avatars")
-                    .font(.subheadline)
-                    .foregroundColor(.blue)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 16)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(8)
-            }
         }
         .padding(.vertical, 40)
     }

@@ -13,7 +13,6 @@ struct MainView_Firebase: View {
                 BackGroundView()
                 
                 VStack(spacing: 15){
-                    // User card with dynamic data (Firebase専用)
                     UserCard(
                         welcomeText: "Welcome \(appViewModel.userDisplayName)!",
                         descriptionText: avatarCountDescription,
@@ -29,7 +28,6 @@ struct MainView_Firebase: View {
                         Spacer()
                         
                         HStack(spacing: 12) {
-                            // Add avatar button (Firebase専用)
                             NavigationLink(destination: RequestConsentView()
                                 .environmentObject(appViewModel)
                                 .onDisappear {
@@ -89,16 +87,12 @@ struct MainView_Firebase: View {
                         .padding()
                     }
                     
-                    // Firebase専用のアバターリスト
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(firebaseAvatarManager.firestoreAvatars, id: \.id) { firestoreAvatar in
                                 if firestoreAvatar.status == "ready" {
                                     EnhancedAvatarCard(
                                         firestoreAvatar: firestoreAvatar,
-                                        onStartSession: {
-                                            print("Firebase \(firestoreAvatar.creator_name) session started!")
-                                        }
                                     )
                                     .transition(.asymmetric(
                                         insertion: .opacity.combined(with: .slide),

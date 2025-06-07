@@ -56,7 +56,7 @@ struct EndSessionView: View {
                             .cornerRadius(12)
                     }
                     .fullScreenCover(isPresented: $showMainView) {
-                        MainView()
+                        MainView_Firebase()
                     }
                 }
             }

@@ -58,20 +58,6 @@ export class MainController {
 
   // イベントリスナー設定
   setupEventListeners() {
-    // 名前入力フィールド
-    const recipientInput = domManager.get('recipientInput');
-    if (recipientInput) {
-      recipientInput.addEventListener('input', (e) => {
-        appState.set('recipientName', e.target.value.trim());
-      });
-    }
-
-    const creatorInput = domManager.get('creatorInput');
-    if (creatorInput) {
-      creatorInput.addEventListener('input', (e) => {
-        appState.set('creatorName', e.target.value.trim());
-      });
-    }
 
     // チェックボックス機能
     const agreeTerms = domManager.get('agreeTerms');
@@ -137,27 +123,22 @@ export class MainController {
       console.log('🚀 アップロードプロセス開始...');
       
       // ユニークなアバターID生成
-      const avatarId = generateAvatarId();
-      console.log(`📝 アバター ID: ${avatarId}`);
+      const avatarId = appState.get('avatarId');
+      if (!avatarId) {
+        showError('アバターIDが見つかりません');
+        return;
+      }
       
       // Step 1: Cloudinaryにアップロード
       console.log('☁️ Cloudinaryにアップロード中...');
       const { imageUrls, audioUrl } = await uploadService.uploadToCloudinary(avatarId);
       console.log(`✅ Cloudinaryアップロード完了:`, { imageUrls, audioUrl });
       
-      // Step 2: Firebaseにメタデータ保存
-      console.log('🔥 Firebaseにメタデータ保存中...');
-      const docId = await firebaseService.saveMetadata({
-        id: avatarId,
-        recipient_name: appState.get('recipientName'),
-        creator_name: appState.get('creatorName'),
+      // Step 2: 新規作成ではなく既存ドキュメントを更新
+      await firebaseService.updateExistingAvatar(avatarId, {
         image_urls: imageUrls,
         audio_url: audioUrl,
-        image_count: appState.get('images').length,
-        audio_size_mb: (appState.get('audioBlob').size / 1024 / 1024).toFixed(2),
-        storage_provider: 'cloudinary',
-        status: 'ready',
-        created_at: firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'not_ready',
         updated_at: firebase.firestore.FieldValue.serverTimestamp()
       });
       

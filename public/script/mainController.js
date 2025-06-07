@@ -116,16 +116,16 @@ export class MainController {
     if (submitButton?.disabled || appState.get('isSubmitting')) return;
     
     appState.set('isSubmitting', true);
-    submitButton.innerHTML = 'アップロード中...';
+    submitButton.innerHTML = 'uploading...';
     
     try {
       hideMessages();
       console.log('🚀 アップロードプロセス開始...');
       
-      // ユニークなアバターID生成
+      // アバターIDの取得
       const avatarId = appState.get('avatarId');
       if (!avatarId) {
-        showError('アバターIDが見つかりません');
+        showError('cannot upload without avatarId');
         return;
       }
       
@@ -153,7 +153,7 @@ export class MainController {
       
     } catch (error) {
       console.error('❌ アップロードに失敗:', error);
-      showError(`アップロードに失敗しました: ${error.message}`);
+      showError(`Failed to upload: ${error.message}`);
     } finally {
       appState.set('isSubmitting', false);
       submitButton.innerHTML = 'Submit';

@@ -71,7 +71,7 @@ struct Avatar: Codable, Identifiable {
 
 extension Avatar {
     var displayDescription: String {
-        return "\(language) / \(voiceTone)"
+        return "\(language) / \(theme)"
     }
     
     var tagText: String {

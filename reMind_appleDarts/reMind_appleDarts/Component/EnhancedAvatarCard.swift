@@ -110,7 +110,7 @@ struct UpdatedAvatarCard_Previews: PreviewProvider {
             name: "Bob",
             isDefault: true,
             language: "English",
-            theme: "Calm",
+            theme: "Ghibli",
             voiceTone: "Gentle",
             profileImg: "sample_avatar",
             deepfakeReady: true,

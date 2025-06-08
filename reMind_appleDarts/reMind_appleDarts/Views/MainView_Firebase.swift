@@ -89,7 +89,7 @@ struct MainView_Firebase: View {
                     
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            ForEach(firebaseAvatarManager.avatars, id: \.id) { avatar in
+                            ForEach(sortedAvatars, id: \.id) { avatar in
                                 if avatar.status == "ready" {
                                     EnhancedAvatarCard(
                                         avatar: avatar,
@@ -138,6 +138,18 @@ struct MainView_Firebase: View {
             return "No support companions yet"
         } else {
             return "You have \(firebaseCount) support companion\(firebaseCount == 1 ? "" : "s")"
+        }
+    }
+    
+    private var sortedAvatars: [Avatar] {
+        return firebaseAvatarManager.avatars.sorted { first, second in
+            if first.isDefault && !second.isDefault {
+                return true
+            } else if !first.isDefault && second.isDefault {
+                return false
+            } else {
+                return first.name < second.name
+            }
         }
     }
     

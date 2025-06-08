@@ -4,7 +4,7 @@ import FirebaseFirestore
 struct EditAvatarView: View {
     @Environment(\.presentationMode) var presentationMode
     
-    let originalAvatar: Avatar 
+    let originalAvatar: Avatar
     
     @State private var avatarName: String
     @State private var selectedLanguage: String
@@ -22,11 +22,9 @@ struct EditAvatarView: View {
     private var db = Firestore.firestore()
 
     private let languages = ["English", "Japanese", "Spanish", "French", "German", "Italian"]
-    private let themes = ["Calm", "Energetic", "Peaceful", "Motivational", "Relaxing", "Cheerful"]
+    private let themes = ["Human", "Ghibli"]
     private let voiceTones = ["Gentle", "Soft", "Medium", "Warm", "Clear", "Soothing"]
-    private let profileImages = ["sample_avatar", "avatar_1", "avatar_2", "avatar_3", "avatar_4"]
     
-    // ✅ 修正: FirestoreAvatar → Avatar
     init(avatar: Avatar) {
         self.originalAvatar = avatar
         self._avatarName = State(initialValue: avatar.name)
@@ -135,7 +133,6 @@ struct EditAvatarView: View {
                     .foregroundColor(.secondaryText)
             }
 
-            // ✅ 修正: FirestoreAvatarのプロパティ名をAvatarに合わせる
             if let imageUrl = originalAvatar.image_urls.first, !imageUrl.isEmpty {
                 AsyncImage(url: URL(string: imageUrl)) { image in
                     image
@@ -339,7 +336,6 @@ struct EditAvatarView: View {
     }
     
     private func deleteAvatar() {
-        // ✅ 修正: documentIDプロパティはそのまま
         guard let documentID = originalAvatar.documentID else {
             print("❌ Document ID not found")
             return
@@ -365,7 +361,6 @@ struct EditAvatarView: View {
         
         isUpdating = true
         
-        // 更新データ
         let updateData: [String: Any] = [
             "name": trimmedName,
             "language": selectedLanguage,
@@ -376,7 +371,6 @@ struct EditAvatarView: View {
             "updated_at": Timestamp(date: Date())
         ]
         
-        // ✅ 修正: documentIDプロパティはそのまま
         guard let documentID = originalAvatar.documentID else {
             print("❌ Document ID not found")
             isUpdating = false
@@ -400,13 +394,12 @@ struct EditAvatarView: View {
 }
 
 #Preview {
-    // ✅ 修正: サンプルデータの型をAvatarに変更
     let sampleAvatar = Avatar(
         id: "avatar_12345",
         name: "Sample Avatar",
         isDefault: true,
         language: "English",
-        theme: "Calm",
+        theme: "Ghibli",
         voiceTone: "Gentle",
         profileImg: "sample_avatar",
         deepfakeReady: true,
@@ -423,5 +416,5 @@ struct EditAvatarView: View {
         deepfake_video_urls: []
     )
     
-    EditAvatarView(avatar: sampleAvatar)  // ✅ 修正: firestoreAvatar → avatar
+    EditAvatarView(avatar: sampleAvatar)  
 }

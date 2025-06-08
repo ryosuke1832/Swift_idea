@@ -5,8 +5,7 @@ import SwiftUI
 struct Avatar: Codable, Identifiable {
     @DocumentID var documentID: String?
     var id: String
-    
-    // ローカルAvatar互換フィールド
+
     var name: String
     var isDefault: Bool
     var language: String
@@ -15,7 +14,6 @@ struct Avatar: Codable, Identifiable {
     var profileImg: String
     var deepfakeReady: Bool
     
-    // Firebase固有フィールド
     var recipient_name: String
     var creator_name: String
     var image_urls: [String]
@@ -28,7 +26,6 @@ struct Avatar: Codable, Identifiable {
     var updated_at: Timestamp?
     var deepfake_video_urls: [String]
     
-    // 初期化子
     init(
         id: String = UUID().uuidString,
         name: String,
@@ -107,7 +104,7 @@ extension Avatar {
     }
 }
 
-// Userモデル（一旦そのまま）
+
 struct User: Codable {
     var id: Int
     var name: String

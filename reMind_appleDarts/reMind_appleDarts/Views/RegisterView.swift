@@ -1,11 +1,18 @@
 import SwiftUI
+import FirebaseFirestore
 
 struct RegisterView: View {
+    @EnvironmentObject var appViewModel: AppViewModel
     @State private var isRegistered = false
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
     @State private var isPasswordVisible = false
+    @State private var isRegistering = false
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    
+    private var db = Firestore.firestore()
 
     var body: some View {
         NavigationStack {
@@ -19,7 +26,7 @@ struct RegisterView: View {
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(.black)
 
-                    Text("Let’s get you started")
+                    Text("Let's get you started")
                         .font(.subheadline)
                         .foregroundColor(.gray)
 
@@ -50,7 +57,6 @@ struct RegisterView: View {
                             Text("Password")
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
-                            
 
                             HStack {
                                 Group {
@@ -78,15 +84,12 @@ struct RegisterView: View {
                                     .stroke(Color.gray.opacity(0.3))
                             )
                         }
-
                     }
                     .padding(.horizontal, 30)
 
                     Spacer()
 
-                    Button(action: {
-                        isRegistered = true
-                    }) {
+                    Button(action: handleRegister) {
                         Text("Register")
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 18)
@@ -102,11 +105,80 @@ struct RegisterView: View {
                 .navigationDestination(isPresented: $isRegistered) {
                     TutorialView()
                 }
+                .alert("Registration", isPresented: $showAlert) {
+                    Button("OK") {
+                        if isRegistered {
+                        }
+                    }
+                } message: {
+                    Text(alertMessage)
+                }
             }
         }
+    }
+    
+    // MARK: - Firebase Registration
+    
+    private func handleRegister() {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedName.isEmpty && !trimmedEmail.isEmpty && !password.isEmpty else {
+            alertMessage = "input all field!"
+            showAlert = true
+            return
+        }
+        
+        createNewUser(name: trimmedName, email: trimmedEmail, password: password)
+    }
+    
+    private func createNewUser(name: String, email: String, password: String) {
+        let userId = generateUniqueUserId()
+        
+        let firebaseUser = FirebaseUser(
+            id: userId,
+            name: name,
+            email: email,
+            password: password,
+            profileImg: "sample_avatar", //
+            created_at: Timestamp(date: Date()),
+            updated_at: Timestamp(date: Date())
+        )
+        
+        do {
+            try db.collection("users").document(userId).setData(from: firebaseUser) { [self] error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("❌ Registration error: \(error)")
+                        alertMessage = "fail to register"
+                        showAlert = true
+                    } else {
+                        print("✅ User registered successfully: \(userId)")
+                        
+                        let localUser = firebaseUser.toLocalUser()
+                        
+                        appViewModel.authViewModel.currentUser = localUser
+                        appViewModel.authViewModel.isLoggedIn = true
+                        isRegistered = true
+                    }
+                }
+            }
+        } catch {
+            DispatchQueue.main.async {
+                alertMessage = "fail to register"
+                showAlert = true
+            }
+        }
+    }
+    
+    private func generateUniqueUserId() -> String {
+        let timestamp = Int(Date().timeIntervalSince1970)
+        let randomComponent = Int.random(in: 1000...9999)
+        return "user_\(timestamp)_\(randomComponent)"
     }
 }
 
 #Preview {
     RegisterView()
+        .environmentObject(AppViewModel())
 }

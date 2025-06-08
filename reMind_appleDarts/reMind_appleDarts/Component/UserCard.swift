@@ -11,23 +11,35 @@ struct UserCard: View {
     
     let welcomeText: String
     let descriptionText: String
-    let avatarImageName: String
+    let profileImageURL: String
     
     init(welcomeText: String = "Welcome, User!",
          descriptionText: String = "Feel grounded with your loved one",
-         avatarImageName: String = "sample_avatar") {
+         profileImageURL: String = "") {
         self.welcomeText = welcomeText
         self.descriptionText = descriptionText
-        self.avatarImageName = avatarImageName
+        self.profileImageURL = profileImageURL
     }
     
     var body: some View {
         HStack{
-            Image(avatarImageName)
-                .resizable()
-                .frame(width: 100, height: 100)
-                .cornerRadius(100)
-                .padding()
+            AsyncImage(url: URL(string: profileImageURL.isEmpty ? defaultProfileImageURL : profileImageURL)) { image in
+                 image
+                     .resizable()
+                     .aspectRatio(contentMode: .fill)
+             } placeholder: {
+                 ZStack {
+                     Circle()
+                         .fill(Color.gray.opacity(0.3))
+                     
+                     Image(systemName: "person.fill")
+                         .font(.system(size: 40))
+                         .foregroundColor(.gray)
+                 }
+             }
+             .frame(width: 100, height: 100)
+             .clipShape(Circle())
+             .padding()
             VStack(alignment: .leading){
                 Text(welcomeText)
                     .font(.title)
@@ -39,13 +51,21 @@ struct UserCard: View {
             
         }
     }
+    private var defaultProfileImageURL: String {
+        return "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png"
+    }
 }
 
 #Preview {
     VStack(spacing: 20) {
+        // デフォルト画像URLのテスト
         UserCard(welcomeText: "Welcome User!",
                 descriptionText: "Feel grounded with your loved one",
-                avatarImageName: "sample_avatar")
+                profileImageURL: "")
+        
+        // Firebase URLのテスト
+        UserCard(welcomeText: "Welcome Firebase User!",
+                descriptionText: "Using Firebase profile image",
+                profileImageURL: "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png")
     }
-    
 }

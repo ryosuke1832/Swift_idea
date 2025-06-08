@@ -34,7 +34,7 @@ struct TutorialView: View {
                 }
             }
             .navigationDestination(isPresented: $navigateToMain) {
-                MainView()
+                MainView_Firebase()
             }
         }
     }

@@ -154,17 +154,13 @@ struct RequestConsentView: View {
         return [
             // 基本識別
             "id": avatarId,
-            
-            // ローカルAvatar互換フィールド
-            "name": recipientName, // creator_nameと同じ値
-            "isDefault": false,
+            "name": recipientName, //             "isDefault": false,
             "language": "English",
-            "theme": "Calm",
+            "theme": "Human",
             "voiceTone": "Gentle",
-            "profileImg": "sample_avatar", // フォールバック用
-            "deepfakeReady": false, // status == "ready"と同じ
+            "profileImg": "sample_avatar",
+            "deepfakeReady": false,
             
-            // Firebase固有フィールド
             "recipient_name": recipientName,
             "creator_name": creatorName,
             "image_urls": [],

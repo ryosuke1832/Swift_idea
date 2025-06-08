@@ -105,12 +105,13 @@ extension Avatar {
 }
 
 
+
 struct User: Codable {
     var id: Int
     var name: String
     var email: String
     var password: String
-    var profileImg: String
+    var profileImageURL: String
     var avatars: [Avatar]
 }
 
@@ -121,5 +122,57 @@ extension User {
     
     var displayName: String {
         return name.isEmpty ? "User" : name
+    }
+    
+    // 🆕 プロフィール画像の取得ロジック（Firebase URLのみ）
+    var displayProfileImageURL: String {
+        if !profileImageURL.isEmpty {
+            return profileImageURL
+        }
+        // フォールバック：デフォルトのプレースホルダー画像URL
+        return "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png"
+    }
+    
+    // 🆕 有効な画像URLがあるかどうか
+    var hasValidProfileImage: Bool {
+        return !profileImageURL.isEmpty && isValidURL(profileImageURL)
+    }
+    
+    private func isValidURL(_ string: String) -> Bool {
+        return string.hasPrefix("http://") || string.hasPrefix("https://")
+    }
+}
+
+struct FirebaseUser: Codable, Identifiable {
+    @DocumentID var documentID: String?
+    var id: String
+    var name: String
+    var email: String
+    var password: String
+    var profileImageURL: String
+    var created_at: Timestamp?
+    var updated_at: Timestamp?
+    
+    func toLocalUser() -> User {
+        return User(
+            id: abs(id.hashValue),
+            name: name,
+            email: email,
+            password: password,
+            profileImageURL: profileImageURL,
+            avatars: []
+        )
+    }
+    
+    static func fromLocalUser(_ user: User) -> FirebaseUser {
+        return FirebaseUser(
+            id: "user_\(user.id)",
+            name: user.name,
+            email: user.email,
+            password: user.password,
+            profileImageURL: user.profileImageURL,
+            created_at: Timestamp(date: Date()),
+            updated_at: Timestamp(date: Date())
+        )
     }
 }

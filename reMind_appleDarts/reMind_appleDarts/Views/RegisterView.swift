@@ -140,7 +140,7 @@ struct RegisterView: View {
             name: name,
             email: email,
             password: password,
-            profileImg: "sample_avatar", //
+            profileImageURL: "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png", //
             created_at: Timestamp(date: Date()),
             updated_at: Timestamp(date: Date())
         )

@@ -4,47 +4,9 @@
 //
 //  Created by user on 2025/06/10.
 //
-
 import Foundation
 import FirebaseFirestore
 import Combine
-
-
-struct FirebaseUser: Codable, Identifiable {
-    @DocumentID var documentID: String?
-    var id: String
-    var name: String
-    var email: String
-    var password: String
-    var profileImg: String
-    var created_at: Timestamp?
-    var updated_at: Timestamp?
-    
-    // ローカルUserモデルに変換
-    func toLocalUser() -> User {
-        return User(
-            id: abs(id.hashValue), // idをIntに変換
-            name: name,
-            email: email,
-            password: password, // 開発用: パスワードも保存
-            profileImg: profileImg,
-            avatars: [] // アバターは別途管理
-        )
-    }
-    
-    // ローカルUserから作成
-    static func fromLocalUser(_ user: User) -> FirebaseUser {
-        return FirebaseUser(
-            id: "user_\(user.id)",
-            name: user.name,
-            email: user.email,
-            password: user.password, // 開発用: パスワードも保存
-            profileImg: user.profileImg,
-            created_at: Timestamp(date: Date()),
-            updated_at: Timestamp(date: Date())
-        )
-    }
-}
 
 class FirebaseUserManager: ObservableObject {
     @Published var currentUser: User?
@@ -133,6 +95,7 @@ class FirebaseUserManager: ObservableObject {
                         let firebaseUser = try document.data(as: FirebaseUser.self)
                         self?.currentUser = firebaseUser.toLocalUser()
                         print("✅ User loaded from Firebase: \(firebaseUser.name)")
+                        print("🖼️ Profile image URL: \(firebaseUser.profileImageURL)")
                     } catch {
                         self?.errorMessage = "ユーザーデータの解析に失敗: \(error.localizedDescription)"
                         print("❌ User parsing error: \(error)")
@@ -154,6 +117,7 @@ class FirebaseUserManager: ObservableObject {
         print("🗑️ User data cleared")
     }
     
+    // 🆕 Firebase URL専用のupdateUserメソッド
     func updateUser(_ updatedUser: User) {
         guard let currentUserId = getUserIdFromUserDefaults() else {
             errorMessage = "ユーザーIDが見つかりません"
@@ -165,7 +129,7 @@ class FirebaseUserManager: ObservableObject {
         let updateData: [String: Any] = [
             "name": updatedUser.name,
             "email": updatedUser.email,
-            "profileImg": updatedUser.profileImg,
+            "profileImageURL": updatedUser.profileImageURL,  // 🆕 Firebase URLのみ
             "updated_at": Timestamp(date: Date())
         ]
         
@@ -180,6 +144,7 @@ class FirebaseUserManager: ObservableObject {
                         print("❌ Firebase user update error: \(error)")
                     } else {
                         print("✅ User updated in Firebase")
+                        print("🖼️ New profile image URL: \(updatedUser.profileImageURL)")
                         self?.currentUser = updatedUser
                     }
                 }
@@ -200,23 +165,16 @@ class FirebaseUserManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: "firebase_user_id")
     }
     
-    // MARK: - Single Default Avatar Enforcement
-    
-    private func enforceSingleDefaultAvatar(_ user: User) -> User {
-        // アバター管理は別のFirebaseAvatarManagerで行うため、
-        // ここでは基本的なユーザー情報のみ管理
-        return user
-    }
-    
     // MARK: - Helper Methods
     
+    // 🆕 Firebase URL対応のダミーユーザー作成
     func createDummyUser() -> User {
         let dummyUser = User(
             id: Int.random(in: 1000...9999),
             name: "User",
             email: "user@example.com",
             password: "",
-            profileImg: "sample_avatar",
+            profileImageURL: "https://picsum.photos/150/150?random=\(Int.random(in: 1...100))",  // 🆕 ランダムな画像URL
             avatars: []
         )
         saveUser(dummyUser)

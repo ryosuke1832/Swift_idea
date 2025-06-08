@@ -16,7 +16,7 @@ struct MainView_Firebase: View {
                     UserCard(
                         welcomeText: "Welcome \(appViewModel.userDisplayName)!",
                         descriptionText: avatarCountDescription,
-                        avatarImageName: appViewModel.userProfileImage
+                        profileImageURL: appViewModel.userProfileImageURL
                     )
                     
                     Spacer()

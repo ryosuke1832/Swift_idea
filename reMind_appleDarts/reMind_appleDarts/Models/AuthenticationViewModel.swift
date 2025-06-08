@@ -5,7 +5,6 @@
 //  Created by user on 2025/06/03.
 //
 //
-
 import Foundation
 import Combine
 
@@ -14,18 +13,15 @@ class AuthenticationViewModel: ObservableObject {
     @Published var isLoggedIn: Bool = false
     @Published var isLoading: Bool = false
     
-    // Firebase UserManagerを使用
     private var firebaseUserManager = FirebaseUserManager()
     private var cancellables = Set<AnyCancellable>()
     
     init() {
-        // FirebaseUserManagerからユーザー状態を監視
         setupUserObserver()
         loadStoredUser()
     }
     
     private func setupUserObserver() {
-        // FirebaseUserManagerの状態変更を監視
         firebaseUserManager.$currentUser
             .receive(on: DispatchQueue.main)
             .sink { [weak self] user in
@@ -69,7 +65,8 @@ class AuthenticationViewModel: ObservableObject {
     
     // MARK: - User Profile Management
     
-    func updateUserProfile(name: String? = nil, email: String? = nil, profileImg: String? = nil, password: String? = nil) {
+    // 🆕 Firebase URL専用のプロフィール更新メソッド
+    func updateUserProfile(name: String? = nil, email: String? = nil, profileImageURL: String? = nil, password: String? = nil) {
         guard var user = currentUser else { return }
         
         if let name = name {
@@ -78,11 +75,11 @@ class AuthenticationViewModel: ObservableObject {
         if let email = email {
             user.email = email
         }
-        if let profileImg = profileImg {
-            user.profileImg = profileImg
+        if let profileImageURL = profileImageURL {
+            user.profileImageURL = profileImageURL  // 🆕 Firebase URLのみ
         }
         if let password = password {
-            user.password = password // 開発用: パスワード更新も対応
+            user.password = password
         }
         
         firebaseUserManager.updateUser(user)
@@ -94,8 +91,9 @@ class AuthenticationViewModel: ObservableObject {
         return currentUser?.displayName ?? "User"
     }
     
-    var userProfileImage: String {
-        return currentUser?.profileImg ?? "sample_avatar"
+    // 🆕 Firebase画像URLを返す
+    var userProfileImageURL: String {
+        return currentUser?.displayProfileImageURL ?? ""
     }
     
     var userEmail: String {
@@ -104,6 +102,11 @@ class AuthenticationViewModel: ObservableObject {
     
     var hasUser: Bool {
         return currentUser != nil
+    }
+    
+    // 🆕 有効なプロフィール画像があるかどうか
+    var hasValidProfileImage: Bool {
+        return currentUser?.hasValidProfileImage ?? false
     }
     
     // MARK: - Error Handling

@@ -4,46 +4,64 @@
 //
 //  Created by user on 2025/06/03.
 //
+//
 
 import Foundation
+import Combine
 
 class AuthenticationViewModel: ObservableObject {
     @Published var currentUser: User?
     @Published var isLoggedIn: Bool = false
     @Published var isLoading: Bool = false
     
+    // Firebase UserManagerを使用
+    private var firebaseUserManager = FirebaseUserManager()
+    private var cancellables = Set<AnyCancellable>()
+    
     init() {
+        // FirebaseUserManagerからユーザー状態を監視
+        setupUserObserver()
         loadStoredUser()
+    }
+    
+    private func setupUserObserver() {
+        // FirebaseUserManagerの状態変更を監視
+        firebaseUserManager.$currentUser
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] user in
+                self?.currentUser = user
+                self?.isLoggedIn = user != nil
+            }
+            .store(in: &cancellables)
+        
+        firebaseUserManager.$isLoading
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] loading in
+                self?.isLoading = loading
+            }
+            .store(in: &cancellables)
     }
     
     // MARK: - User Authentication
     
     func login(with user: User) {
-        self.currentUser = user
-        self.isLoggedIn = true
-        UserManager.shared.saveUser(user)
+        firebaseUserManager.saveUser(user)
     }
     
     func logout() {
+        firebaseUserManager.clearUser()
         self.currentUser = nil
         self.isLoggedIn = false
-        UserManager.shared.clearUser()
     }
     
     func createDummyUser() {
-        let dummyUser = User(
-            id: Int.random(in: 1000...9999),
-            name: "User",
-            email: "user@example.com",
-            password: "",
-            profileImg: "sample_avatar",
-            avatars: []
-        )
-        login(with: dummyUser)
+        let dummyUser = firebaseUserManager.createDummyUser()
+        self.currentUser = dummyUser
+        self.isLoggedIn = true
     }
     
     private func loadStoredUser() {
-        if let storedUser = UserManager.shared.loadUser() {
+        if let storedUser = firebaseUserManager.loadUser() {
             self.currentUser = storedUser
             self.isLoggedIn = true
         }
@@ -51,7 +69,7 @@ class AuthenticationViewModel: ObservableObject {
     
     // MARK: - User Profile Management
     
-    func updateUserProfile(name: String? = nil, email: String? = nil, profileImg: String? = nil) {
+    func updateUserProfile(name: String? = nil, email: String? = nil, profileImg: String? = nil, password: String? = nil) {
         guard var user = currentUser else { return }
         
         if let name = name {
@@ -63,9 +81,11 @@ class AuthenticationViewModel: ObservableObject {
         if let profileImg = profileImg {
             user.profileImg = profileImg
         }
+        if let password = password {
+            user.password = password // 開発用: パスワード更新も対応
+        }
         
-        self.currentUser = user
-        UserManager.shared.saveUser(user)
+        firebaseUserManager.updateUser(user)
     }
     
     // MARK: - User Data Access
@@ -85,11 +105,14 @@ class AuthenticationViewModel: ObservableObject {
     var hasUser: Bool {
         return currentUser != nil
     }
+    
+    // MARK: - Error Handling
+    
+    var errorMessage: String {
+        return firebaseUserManager.errorMessage
+    }
+    
+    func clearError() {
+        firebaseUserManager.clearError()
+    }
 }
-
-// ✅ User Extensionを削除（UserModel.swiftに既に定義済み）
-// extension User {
-//     var displayName: String {
-//         return name.isEmpty ? "User" : name
-//     }
-// }

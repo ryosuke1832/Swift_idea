@@ -11,11 +11,26 @@ class FirebaseUserManager: ObservableObject {
     private var listener: ListenerRegistration?
     private let userCollectionPath = "users"
     
-    // セッション管理用（UserDefaults削除）
-    @Published var currentUserId: String?
+    // セッション管理用
+    @Published var currentUserId: String? {
+        didSet {
+            // currentUserIdが変更されたらUserDefaultsに保存
+            if let userId = currentUserId {
+                UserDefaults.standard.set(userId, forKey: "currentUserId")
+                print("💾 Saved currentUserId to UserDefaults: \(userId)")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "currentUserId")
+                print("🗑️ Removed currentUserId from UserDefaults")
+            }
+        }
+    }
     
     init() {
-        // アプリ起動時は何もしない（明示的なログインを要求）
+        // 🆕 アプリ起動時に保存されたユーザーIDを復元
+        self.currentUserId = UserDefaults.standard.string(forKey: "currentUserId")
+        if let savedUserId = currentUserId {
+            print("🔄 Found saved user ID: \(savedUserId)")
+        }
     }
     
     deinit {
@@ -146,6 +161,22 @@ class FirebaseUserManager: ObservableObject {
         currentUser = nil
         currentUserId = nil
         print("🗑️ User data cleared")
+    }
+    
+    // MARK: - 🆕 Auto Login Methods
+    
+    func checkAutoLogin() {
+        guard let savedUserId = currentUserId else {
+            print("⚠️ No saved user ID found")
+            return
+        }
+        
+        print("🔄 Attempting auto login for user: \(savedUserId)")
+        loadUserFromFirebase(userId: savedUserId)
+    }
+    
+    func hasValidSession() -> Bool {
+        return currentUserId != nil
     }
     
     // MARK: - Helper Methods

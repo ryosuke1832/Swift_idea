@@ -8,6 +8,9 @@ class AppViewModel: ObservableObject {
     // 🔴 共有FirebaseUserManagerインスタンス
     @Published var firebaseUserManager = FirebaseUserManager()
     
+    // 🆕 チュートリアル状態管理
+    @Published var hasCompletedTutorial: Bool = UserDefaults.standard.bool(forKey: "hasCompletedTutorial")
+    
     private var cancellables = Set<AnyCancellable>()
     
     init() {
@@ -17,6 +20,9 @@ class AppViewModel: ObservableObject {
         self.authViewModel.setFirebaseUserManager(firebaseUserManager)
         
         setupUserObserver()
+        
+        // 🆕 チュートリアル状態の変更を監視
+        setupTutorialObserver()
     }
     
     // MARK: - Setup
@@ -33,6 +39,15 @@ class AppViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { loading in
                 print("🔄 Auth loading: \(loading)")
+            }
+            .store(in: &cancellables)
+    }
+    
+    // 🆕 チュートリアル状態の監視
+    private func setupTutorialObserver() {
+        $hasCompletedTutorial
+            .sink { completed in
+                print("🎓 Tutorial status changed: \(completed)")
             }
             .store(in: &cancellables)
     }
@@ -63,6 +78,19 @@ class AppViewModel: ObservableObject {
         return authViewModel.errorMessage
     }
     
+    // 🆕 アプリの初期表示状態を判定
+    var shouldShowOnboarding: Bool {
+        return !isLoggedIn
+    }
+    
+    var shouldShowTutorial: Bool {
+        return isLoggedIn && !hasCompletedTutorial
+    }
+    
+    var shouldShowMainApp: Bool {
+        return isLoggedIn && hasCompletedTutorial
+    }
+    
     // MARK: - User Management Methods
     
     func login(email: String, password: String) {
@@ -91,6 +119,7 @@ class AppViewModel: ObservableObject {
     
     func logout() {
         authViewModel.logout()
+        // 🆕 ログアウト時はチュートリアルをリセットしない（ユーザー固有の情報として保持）
     }
     
     func updateProfile(name: String? = nil, email: String? = nil, profileImageURL: String? = nil, password: String? = nil) {
@@ -117,6 +146,49 @@ class AppViewModel: ObservableObject {
                 completion(user)
             }
         }
+    }
+    
+    // MARK: - 🆕 Tutorial Management Methods
+    
+    func markTutorialCompleted() {
+        UserDefaults.standard.set(true, forKey: "hasCompletedTutorial")
+        DispatchQueue.main.async {
+            self.hasCompletedTutorial = true
+        }
+        print("✅ Tutorial marked as completed")
+    }
+    
+    func resetTutorial() {
+        UserDefaults.standard.set(false, forKey: "hasCompletedTutorial")
+        DispatchQueue.main.async {
+            self.hasCompletedTutorial = false
+        }
+        print("🔄 Tutorial reset")
+    }
+    
+    func checkTutorialStatus() {
+        let completed = UserDefaults.standard.bool(forKey: "hasCompletedTutorial")
+        DispatchQueue.main.async {
+            self.hasCompletedTutorial = completed
+        }
+        print("🔍 Tutorial status checked: \(completed)")
+    }
+    
+    // MARK: - 🆕 Auto Login Methods
+    
+    func checkAutoLogin() {
+        print("🔍 Checking auto login...")
+        
+        guard firebaseUserManager.hasValidSession() else {
+            print("⚠️ No valid session found")
+            return
+        }
+        
+        firebaseUserManager.checkAutoLogin()
+    }
+    
+    func hasValidSession() -> Bool {
+        return firebaseUserManager.hasValidSession()
     }
     
     // MARK: - Error Handling

@@ -3,7 +3,6 @@ import FirebaseFirestore
 
 struct RegisterView: View {
     @EnvironmentObject var appViewModel: AppViewModel
-    @State private var isRegistered = false
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
@@ -113,14 +112,8 @@ struct RegisterView: View {
 
                     Spacer()
                 }
-                .navigationDestination(isPresented: $isRegistered) {
-                    TutorialView()
-                }
                 .alert("Registration", isPresented: $showAlert) {
-                    Button("OK") {
-                        if isRegistered {
-                        }
-                    }
+                    Button("OK") { }
                 } message: {
                     Text(alertMessage)
                 }
@@ -179,7 +172,8 @@ struct RegisterView: View {
                         
                         appViewModel.authViewModel.loginWithFirebaseUser(firebaseUser)
                         
-                        isRegistered = true
+                        // 🆕 登録成功時は状態変更のみ（ContentViewが自動的にチュートリアルを表示）
+                        print("✅ Registration completed - will show tutorial")
                     }
                 }
             }

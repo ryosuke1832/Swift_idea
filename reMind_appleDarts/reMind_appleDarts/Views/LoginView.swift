@@ -5,7 +5,6 @@ struct LoginView: View {
     @EnvironmentObject var appViewModel: AppViewModel
     @State private var email = ""
     @State private var password = ""
-    @State private var isLoggedIn = false
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var isLoggingIn = false
@@ -77,9 +76,6 @@ struct LoginView: View {
 
                     Spacer()
                 }
-                .navigationDestination(isPresented: $isLoggedIn) {
-                    MainTabView()
-                }
                 .alert("Login", isPresented: $showAlert) {
                     Button("OK") { }
                 } message: {
@@ -133,7 +129,7 @@ struct LoginView: View {
                         appViewModel.authViewModel.loginWithFirebaseUser(firebaseUser)
                         
                         print("✅ Login successful: \(firebaseUser.name)")
-                        isLoggedIn = true
+                        // 🆕 ログイン成功時は状態変更のみ（ContentViewが自動的に画面切り替え）
                         
                     } catch {
                         print("❌ User parsing error: \(error)")

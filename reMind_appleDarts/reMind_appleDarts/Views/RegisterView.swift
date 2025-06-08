@@ -47,6 +47,8 @@ struct RegisterView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.gray)
                             TextField("Email", text: $email)
+                                .autocapitalization(.none)
+                                .keyboardType(.emailAddress)
                                 .padding()
                                 .background(Color.white)
                                 .cornerRadius(8)
@@ -90,15 +92,24 @@ struct RegisterView: View {
                     Spacer()
 
                     Button(action: handleRegister) {
-                        Text("Register")
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 18)
-                            .background(Color.primaryGreen)
-                            .foregroundColor(.black)
-                            .cornerRadius(15)
-                            .font(.headline)
+                        HStack {
+                            if isRegistering {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .foregroundColor(.black)
+                            }
+                            Text(isRegistering ? "Registering..." : "Register")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 18)
+                        .background(Color.primaryGreen)
+                        .foregroundColor(.black)
+                        .cornerRadius(15)
+                        .font(.headline)
+                        .opacity(isFormValid ? 1.0 : 0.5)
                     }
                     .padding(.horizontal, 30)
+                    .disabled(!isFormValid || isRegistering)
 
                     Spacer()
                 }
@@ -117,17 +128,26 @@ struct RegisterView: View {
         }
     }
     
+    private var isFormValid: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+        !password.isEmpty &&
+        email.contains("@")
+    }
+    
     // MARK: - Firebase Registration
     
     private func handleRegister() {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        guard !trimmedName.isEmpty && !trimmedEmail.isEmpty && !password.isEmpty else {
-            alertMessage = "input all field!"
+        guard isFormValid else {
+            alertMessage = "input all informaton"
             showAlert = true
             return
         }
+        
+        isRegistering = true
         
         createNewUser(name: trimmedName, email: trimmedEmail, password: password)
     }
@@ -140,7 +160,7 @@ struct RegisterView: View {
             name: name,
             email: email,
             password: password,
-            profileImageURL: "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png", //
+            profileImageURL: "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png",
             created_at: Timestamp(date: Date()),
             updated_at: Timestamp(date: Date())
         )
@@ -148,6 +168,8 @@ struct RegisterView: View {
         do {
             try db.collection("users").document(userId).setData(from: firebaseUser) { [self] error in
                 DispatchQueue.main.async {
+                    isRegistering = false
+                    
                     if let error = error {
                         print("❌ Registration error: \(error)")
                         alertMessage = "fail to register"
@@ -155,16 +177,15 @@ struct RegisterView: View {
                     } else {
                         print("✅ User registered successfully: \(userId)")
                         
-                        let localUser = firebaseUser.toLocalUser()
+                        appViewModel.authViewModel.loginWithFirebaseUser(firebaseUser)
                         
-                        appViewModel.authViewModel.currentUser = localUser
-                        appViewModel.authViewModel.isLoggedIn = true
                         isRegistered = true
                     }
                 }
             }
         } catch {
             DispatchQueue.main.async {
+                isRegistering = false
                 alertMessage = "fail to register"
                 showAlert = true
             }

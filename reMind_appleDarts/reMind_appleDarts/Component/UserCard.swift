@@ -1,10 +1,3 @@
-//
-//  UserCard.swift
-//  reMind_appleDarts
-//
-//  Created by ryosuke on 2/6/2025.
-//
-
 import SwiftUI
 
 struct UserCard: View {
@@ -19,11 +12,12 @@ struct UserCard: View {
         self.welcomeText = welcomeText
         self.descriptionText = descriptionText
         self.profileImageURL = profileImageURL
+        
     }
     
     var body: some View {
         HStack{
-            AsyncImage(url: URL(string: profileImageURL.isEmpty ? defaultProfileImageURL : profileImageURL)) { image in
+            AsyncImage(url: URL(string: finalImageURL)) { image in
                  image
                      .resizable()
                      .aspectRatio(contentMode: .fill)
@@ -46,11 +40,21 @@ struct UserCard: View {
                 Text(descriptionText)
                     .font(.caption)
                     .foregroundColor(Color.gray)
+                
             }
             Spacer()
             
         }
+
     }
+    
+    // 🔴 computed property で URL を決定
+    private var finalImageURL: String {
+        let result = profileImageURL.isEmpty ? defaultProfileImageURL : profileImageURL
+        print("🖼️ finalImageURL computed: '\(result)'")
+        return result
+    }
+    
     private var defaultProfileImageURL: String {
         return "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png"
     }
@@ -58,14 +62,14 @@ struct UserCard: View {
 
 #Preview {
     VStack(spacing: 20) {
-        // デフォルト画像URLのテスト
+
         UserCard(welcomeText: "Welcome User!",
                 descriptionText: "Feel grounded with your loved one",
                 profileImageURL: "")
         
-        // Firebase URLのテスト
-        UserCard(welcomeText: "Welcome Firebase User!",
+        UserCard(welcomeText: "Welcome Specific User!",
                 descriptionText: "Using Firebase profile image",
-                profileImageURL: "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png")
+                profileImageURL: "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749362137/Screenshot_2025-06-03_at_1.40.52_pm_zik9v6.png")
+        
     }
 }

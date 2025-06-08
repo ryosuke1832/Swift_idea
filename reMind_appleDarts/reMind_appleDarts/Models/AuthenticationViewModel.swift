@@ -1,10 +1,3 @@
-//
-//  AuthenticationViewModel.swift
-//  reMind_appleDarts
-//
-//  Created by user on 2025/06/03.
-//
-//
 import Foundation
 import Combine
 
@@ -13,15 +6,23 @@ class AuthenticationViewModel: ObservableObject {
     @Published var isLoggedIn: Bool = false
     @Published var isLoading: Bool = false
     
-    private var firebaseUserManager = FirebaseUserManager()
+    // 🔴 共有FirebaseUserManagerへの参照
+    private var firebaseUserManager: FirebaseUserManager?
     private var cancellables = Set<AnyCancellable>()
     
     init() {
+        // firebaseUserManagerは後でsetFirebaseUserManagerで設定される
+    }
+    
+    // 🔴 共有FirebaseUserManagerを設定
+    func setFirebaseUserManager(_ manager: FirebaseUserManager) {
+        self.firebaseUserManager = manager
         setupUserObserver()
-        loadStoredUser()
     }
     
     private func setupUserObserver() {
+        guard let firebaseUserManager = firebaseUserManager else { return }
+        
         firebaseUserManager.$currentUser
             .receive(on: DispatchQueue.main)
             .sink { [weak self] user in
@@ -41,33 +42,44 @@ class AuthenticationViewModel: ObservableObject {
     // MARK: - User Authentication
     
     func login(with user: User) {
-        firebaseUserManager.saveUser(user)
+        firebaseUserManager?.saveUser(user)
+    }
+    
+    func loginWithFirebaseUser(_ firebaseUser: FirebaseUser) {
+        let localUser = firebaseUser.toLocalUser()
+        self.currentUser = localUser
+        self.isLoggedIn = true
+        
+        // FirebaseUserManagerにもログイン状態を設定
+        firebaseUserManager?.currentUser = localUser
+        firebaseUserManager?.currentUserId = firebaseUser.id
+        
+        print("✅ User logged in: \(firebaseUser.name)")
     }
     
     func logout() {
-        firebaseUserManager.clearUser()
+        firebaseUserManager?.clearUser()
         self.currentUser = nil
         self.isLoggedIn = false
     }
     
     func createDummyUser() {
+        guard let firebaseUserManager = firebaseUserManager else { return }
         let dummyUser = firebaseUserManager.createDummyUser()
-        self.currentUser = dummyUser
-        self.isLoggedIn = true
-    }
-    
-    private func loadStoredUser() {
-        if let storedUser = firebaseUserManager.loadUser() {
-            self.currentUser = storedUser
-            self.isLoggedIn = true
-        }
+        print("✅ Dummy user created: \(dummyUser.name)")
     }
     
     // MARK: - User Profile Management
     
-    // 🆕 Firebase URL専用のプロフィール更新メソッド
     func updateUserProfile(name: String? = nil, email: String? = nil, profileImageURL: String? = nil, password: String? = nil) {
-        guard var user = currentUser else { return }
+        guard var user = currentUser else {
+            print("❌ No current user to update")
+            return
+        }
+        
+        print("🔄 Updating user profile...")
+        print("  - Current user: \(user.name)")
+        print("  - FirebaseUserManager currentUserId: \(firebaseUserManager?.currentUserId ?? "nil")")
         
         if let name = name {
             user.name = name
@@ -76,13 +88,10 @@ class AuthenticationViewModel: ObservableObject {
             user.email = email
         }
         if let profileImageURL = profileImageURL {
-            user.profileImageURL = profileImageURL  // 🆕 Firebase URLのみ
-        }
-        if let password = password {
-            user.password = password
+            user.profileImageURL = profileImageURL
         }
         
-        firebaseUserManager.updateUser(user)
+        firebaseUserManager?.updateUser(user)
     }
     
     // MARK: - User Data Access
@@ -91,7 +100,6 @@ class AuthenticationViewModel: ObservableObject {
         return currentUser?.displayName ?? "User"
     }
     
-    // 🆕 Firebase画像URLを返す
     var userProfileImageURL: String {
         return currentUser?.displayProfileImageURL ?? ""
     }
@@ -104,7 +112,6 @@ class AuthenticationViewModel: ObservableObject {
         return currentUser != nil
     }
     
-    // 🆕 有効なプロフィール画像があるかどうか
     var hasValidProfileImage: Bool {
         return currentUser?.hasValidProfileImage ?? false
     }
@@ -112,10 +119,10 @@ class AuthenticationViewModel: ObservableObject {
     // MARK: - Error Handling
     
     var errorMessage: String {
-        return firebaseUserManager.errorMessage
+        return firebaseUserManager?.errorMessage ?? ""
     }
     
     func clearError() {
-        firebaseUserManager.clearError()
+        firebaseUserManager?.clearError()
     }
 }

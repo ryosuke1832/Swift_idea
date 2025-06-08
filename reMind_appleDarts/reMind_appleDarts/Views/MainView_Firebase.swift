@@ -6,6 +6,16 @@ struct MainView_Firebase: View {
     @State private var refreshTrigger = UUID()
     @State private var showingCreateView = false
     
+    let previewUserId: String?
+    
+    @State private var displayName: String = "User"
+    @State private var displayProfileImageURL: String = ""
+    @State private var isLoadingUser: Bool = false
+    
+    init(previewUserId: String? = nil) {
+        self.previewUserId = previewUserId
+    }
+    
     var body: some View {
         NavigationView {
             ZStack{
@@ -14,10 +24,21 @@ struct MainView_Firebase: View {
                 
                 VStack(spacing: 15){
                     UserCard(
-                        welcomeText: "Welcome \(appViewModel.userDisplayName)!",
+                        welcomeText: "Welcome \(displayName)!",
                         descriptionText: avatarCountDescription,
-                        profileImageURL: appViewModel.userProfileImageURL
+                        profileImageURL: displayProfileImageURL
                     )
+                    
+                    if isLoadingUser {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Loading user profile...")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.bottom, 10)
+                    }
                     
                     Spacer()
                     
@@ -123,11 +144,49 @@ struct MainView_Firebase: View {
             }
         }
         .onAppear {
-            appViewModel.initializeApp()
+            loadUserData()
             firebaseAvatarManager.refresh()
         }
         .onReceive(firebaseAvatarManager.$avatars) { _ in
             refreshView()
+        }
+    }
+    
+    private func loadUserData() {
+        if let userId = previewUserId {
+            loadPreviewUser(userId: userId)
+        } else if let user = appViewModel.authViewModel.currentUser {
+            displayName = user.name
+            displayProfileImageURL = user.profileImageURL
+            print("✅ Loaded user from appViewModel: \(user.name)")
+        } else {
+            print("⚠️ No user found in appViewModel")
+        }
+    }
+    
+    private func loadPreviewUser(userId: String) {
+        isLoadingUser = true
+        let firebaseUserManager = FirebaseUserManager()
+        
+        firebaseUserManager.getUserById(userId) { user in
+            DispatchQueue.main.async {
+                isLoadingUser = false
+                
+                if let user = user {
+                    displayName = user.name
+                    displayProfileImageURL = user.profileImageURL
+                    
+                    appViewModel.authViewModel.currentUser = user
+                    appViewModel.authViewModel.isLoggedIn = true
+                    
+                    print("✅ Preview user loaded: \(user.name)")
+                    print("🖼️ Preview user profileImageURL: '\(user.profileImageURL)'")
+                } else {
+                    displayName = "Test User (\(userId.prefix(8)))"
+                    displayProfileImageURL = "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png"
+                    print("⚠️ Failed to load user \(userId), using fallback")
+                }
+            }
         }
     }
     
@@ -159,9 +218,7 @@ struct MainView_Firebase: View {
         }
     }
 }
-
-
-#Preview {
-    MainView_Firebase()
+#Preview("With Specific User") {
+    MainView_Firebase(previewUserId: "BKkzo8JLqoCNQq4jo3yw")
         .environmentObject(AppViewModel())
 }

@@ -1,21 +1,21 @@
-//
-//  Untitled.swift
-//  reMind_appleDarts
-//
-//  Created by user on 2025/06/03.
-//
 import Foundation
 import SwiftUI
 import Combine
 
-/// Firebase専用のアプリケーションビューモデル
 class AppViewModel: ObservableObject {
     @Published var authViewModel: AuthenticationViewModel
+    
+    // 🔴 共有FirebaseUserManagerインスタンス
+    @Published var firebaseUserManager = FirebaseUserManager()
     
     private var cancellables = Set<AnyCancellable>()
     
     init() {
         self.authViewModel = AuthenticationViewModel()
+        
+        // 🔴 AuthenticationViewModelに共有インスタンスを設定
+        self.authViewModel.setFirebaseUserManager(firebaseUserManager)
+        
         setupUserObserver()
     }
     
@@ -43,7 +43,6 @@ class AppViewModel: ObservableObject {
         return authViewModel.userDisplayName
     }
     
-    // 🆕 Firebase画像URLを返す
     var userProfileImageURL: String {
         return authViewModel.userProfileImageURL
     }
@@ -72,7 +71,7 @@ class AppViewModel: ObservableObject {
             name: "User",
             email: email,
             password: password,
-            profileImageURL: "",  // 🆕 空文字で初期化
+            profileImageURL: "",
             avatars: []
         )
         authViewModel.login(with: user)
@@ -84,7 +83,7 @@ class AppViewModel: ObservableObject {
             name: name,
             email: email,
             password: password,
-            profileImageURL: "",  // 🆕 空文字で初期化
+            profileImageURL: "",
             avatars: []
         )
         authViewModel.login(with: user)
@@ -94,7 +93,6 @@ class AppViewModel: ObservableObject {
         authViewModel.logout()
     }
     
-    // 🆕 プロフィール更新メソッド（Firebase URLのみ）
     func updateProfile(name: String? = nil, email: String? = nil, profileImageURL: String? = nil, password: String? = nil) {
         authViewModel.updateUserProfile(
             name: name,
@@ -104,24 +102,21 @@ class AppViewModel: ObservableObject {
         )
     }
     
-    // 🆕 プロフィール画像URLのみを更新する便利メソッド
     func updateProfileImageURL(_ url: String) {
         authViewModel.updateUserProfile(profileImageURL: url)
     }
     
-    // MARK: - Initialization Methods
-    
-    func initializeApp() {
-        if !authViewModel.hasUser {
-            print("ℹ️ ユーザーが見つかりません - 新規ユーザーを作成")
-            authViewModel.createDummyUser()
-        } else {
-            print("✅ 既存ユーザーを読み込み完了")
+    // 🔴 共有FirebaseUserManagerへの直接アクセスメソッド
+    func loadAndSetCurrentUser(userId: String, completion: @escaping (User?) -> Void) {
+        firebaseUserManager.loadAndSetCurrentUser(userId: userId) { [weak self] user in
+            DispatchQueue.main.async {
+                if let user = user {
+                    self?.authViewModel.currentUser = user
+                    self?.authViewModel.isLoggedIn = true
+                }
+                completion(user)
+            }
         }
-    }
-    
-    func resetAllData() {
-        authViewModel.logout()
     }
     
     // MARK: - Error Handling
@@ -129,5 +124,4 @@ class AppViewModel: ObservableObject {
     func clearError() {
         authViewModel.clearError()
     }
-    
 }

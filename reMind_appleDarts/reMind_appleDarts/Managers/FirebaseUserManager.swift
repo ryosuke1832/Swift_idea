@@ -1,9 +1,3 @@
-//
-//  FirebaseUserManager.swift
-//  reMind_appleDarts
-//
-//  Created by user on 2025/06/10.
-//
 import Foundation
 import FirebaseFirestore
 import Combine
@@ -17,8 +11,11 @@ class FirebaseUserManager: ObservableObject {
     private var listener: ListenerRegistration?
     private let userCollectionPath = "users"
     
+    // セッション管理用（UserDefaults削除）
+    @Published var currentUserId: String?
+    
     init() {
-        loadStoredUser()
+        // アプリ起動時は何もしない（明示的なログインを要求）
     }
     
     deinit {
@@ -46,7 +43,7 @@ class FirebaseUserManager: ObservableObject {
                         } else {
                             print("✅ User saved to Firebase: \(firebaseUser.id)")
                             self?.currentUser = user
-                            self?.saveUserIdToUserDefaults(firebaseUser.id)
+                            self?.currentUserId = firebaseUser.id
                         }
                     }
                 }
@@ -58,14 +55,8 @@ class FirebaseUserManager: ObservableObject {
         }
     }
     
-    func loadUser() -> User? {
-        guard let userId = getUserIdFromUserDefaults() else {
-            print("ℹ️ No user ID found in UserDefaults")
-            return nil
-        }
-        
+    func loginUser(userId: String) {
         loadUserFromFirebase(userId: userId)
-        return currentUser
     }
     
     private func loadUserFromFirebase(userId: String) {
@@ -94,6 +85,7 @@ class FirebaseUserManager: ObservableObject {
                     do {
                         let firebaseUser = try document.data(as: FirebaseUser.self)
                         self?.currentUser = firebaseUser.toLocalUser()
+                        self?.currentUserId = userId
                         print("✅ User loaded from Firebase: \(firebaseUser.name)")
                         print("🖼️ Profile image URL: \(firebaseUser.profileImageURL)")
                     } catch {
@@ -104,34 +96,31 @@ class FirebaseUserManager: ObservableObject {
             }
     }
     
-    private func loadStoredUser() {
-        if let user = loadUser() {
-            print("✅ Stored user loaded: \(user.name)")
-        }
-    }
-    
-    func clearUser() {
-        listener?.remove()
-        currentUser = nil
-        clearUserIdFromUserDefaults()
-        print("🗑️ User data cleared")
-    }
-    
-    // 🆕 Firebase URL専用のupdateUserメソッド
+    // 🔴 デバッグログ付きupdateUser
     func updateUser(_ updatedUser: User) {
-        guard let currentUserId = getUserIdFromUserDefaults() else {
+        print("🔄 updateUser called")
+        print("  - currentUserId: \(currentUserId ?? "nil")")
+        print("  - updatedUser.name: '\(updatedUser.name)'")
+        print("  - updatedUser.profileImageURL: '\(updatedUser.profileImageURL)'")
+        
+        guard let currentUserId = currentUserId else {
             errorMessage = "ユーザーIDが見つかりません"
+            print("❌ currentUserId is nil - cannot update user")
             return
         }
         
         isLoading = true
+        errorMessage = ""
         
         let updateData: [String: Any] = [
             "name": updatedUser.name,
             "email": updatedUser.email,
-            "profileImageURL": updatedUser.profileImageURL,  // 🆕 Firebase URLのみ
+            "profileImageURL": updatedUser.profileImageURL,
             "updated_at": Timestamp(date: Date())
         ]
+        
+        print("🔄 Updating Firebase document: \(currentUserId)")
+        print("🔄 Update data: \(updateData)")
         
         db.collection(userCollectionPath)
             .document(currentUserId)
@@ -143,48 +132,48 @@ class FirebaseUserManager: ObservableObject {
                         self?.errorMessage = "ユーザー更新に失敗: \(error.localizedDescription)"
                         print("❌ Firebase user update error: \(error)")
                     } else {
-                        print("✅ User updated in Firebase")
-                        print("🖼️ New profile image URL: \(updatedUser.profileImageURL)")
+                        print("✅ User updated in Firebase successfully")
+                        print("🖼️ New profile image URL: '\(updatedUser.profileImageURL)'")
                         self?.currentUser = updatedUser
+                        self?.errorMessage = "" // Clear any previous errors
                     }
                 }
             }
     }
     
-    // MARK: - UserDefaults Helper (Firebase ID管理用)
-    
-    private func saveUserIdToUserDefaults(_ userId: String) {
-        UserDefaults.standard.set(userId, forKey: "firebase_user_id")
-    }
-    
-    private func getUserIdFromUserDefaults() -> String? {
-        return UserDefaults.standard.string(forKey: "firebase_user_id")
-    }
-    
-    private func clearUserIdFromUserDefaults() {
-        UserDefaults.standard.removeObject(forKey: "firebase_user_id")
+    func clearUser() {
+        listener?.remove()
+        currentUser = nil
+        currentUserId = nil
+        print("🗑️ User data cleared")
     }
     
     // MARK: - Helper Methods
     
-    // 🆕 Firebase URL対応のダミーユーザー作成
     func createDummyUser() -> User {
         let dummyUser = User(
             id: Int.random(in: 1000...9999),
             name: "User",
             email: "user@example.com",
             password: "",
-            profileImageURL: "https://picsum.photos/150/150?random=\(Int.random(in: 1...100))",  // 🆕 ランダムな画像URL
+            profileImageURL: "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png",
             avatars: []
         )
         saveUser(dummyUser)
         return dummyUser
     }
     
+    func loadUser() -> User? {
+        return currentUser
+    }
+    
+    // 🔴 getUserByIdでcurrentUserIdも設定する
     func getUserById(_ userId: String, completion: @escaping (User?) -> Void) {
+        print("🔍 Getting user by ID: \(userId)")
+        
         db.collection(userCollectionPath)
             .document(userId)
-            .getDocument { documentSnapshot, error in
+            .getDocument { [weak self] documentSnapshot, error in
                 if let error = error {
                     print("❌ Get user by ID error: \(error)")
                     completion(nil)
@@ -193,13 +182,24 @@ class FirebaseUserManager: ObservableObject {
                 
                 guard let document = documentSnapshot,
                       document.exists else {
+                    print("⚠️ User document not found: \(userId)")
                     completion(nil)
                     return
                 }
                 
                 do {
                     let firebaseUser = try document.data(as: FirebaseUser.self)
-                    completion(firebaseUser.toLocalUser())
+                    let localUser = firebaseUser.toLocalUser()
+                    
+                    // 🔴 重要: currentUserIdを設定
+                    DispatchQueue.main.async {
+                        self?.currentUserId = userId
+                        print("✅ Set currentUserId to: \(userId)")
+                    }
+                    
+                    print("✅ User found: \(localUser.name)")
+                    print("🖼️ ProfileImageURL: '\(localUser.profileImageURL)'")
+                    completion(localUser)
                 } catch {
                     print("❌ User parsing error: \(error)")
                     completion(nil)
@@ -207,7 +207,25 @@ class FirebaseUserManager: ObservableObject {
             }
     }
     
+    // 🔴 新しいメソッド: ユーザーを読み込んでセッションを設定
+    func loadAndSetCurrentUser(userId: String, completion: @escaping (User?) -> Void) {
+        getUserById(userId) { [weak self] user in
+            DispatchQueue.main.async {
+                if let user = user {
+                    self?.currentUser = user
+                    self?.currentUserId = userId
+                    print("✅ Current user set: \(user.name) (ID: \(userId))")
+                }
+                completion(user)
+            }
+        }
+    }
+    
     func clearError() {
         errorMessage = ""
+    }
+    
+    var isLoggedIn: Bool {
+        return currentUser != nil && currentUserId != nil
     }
 }

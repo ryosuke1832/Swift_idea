@@ -75,8 +75,6 @@ struct LoginView: View {
                     .padding(.horizontal, 30)
                     .disabled(!isFormValid || isLoggingIn)
 
-                    
-
                     Spacer()
                 }
                 .navigationDestination(isPresented: $isLoggedIn) {
@@ -101,14 +99,13 @@ struct LoginView: View {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         
         guard isFormValid else {
-            alertMessage = "メールアドレスとパスワードを正しく入力してください"
+            alertMessage = "input mail address and password correctly"
             showAlert = true
             return
         }
         
         isLoggingIn = true
         
-        // Firestoreでユーザーを検索
         db.collection("users")
             .whereField("email", isEqualTo: trimmedEmail)
             .whereField("password", isEqualTo: password)
@@ -118,33 +115,29 @@ struct LoginView: View {
                     
                     if let error = error {
                         print("❌ Login error: \(error)")
-                        alertMessage = "ログインに失敗しました: \(error.localizedDescription)"
+                        alertMessage = "fail to login: \(error.localizedDescription)"
                         showAlert = true
                         return
                     }
                     
                     guard let documents = querySnapshot?.documents,
                           !documents.isEmpty else {
-                        alertMessage = "メールアドレスまたはパスワードが正しくありません"
+                        alertMessage = "mail addores or password is incorrect"
                         showAlert = true
                         return
                     }
                     
-                    // ユーザーが見つかった場合
                     let document = documents.first!
                     do {
                         let firebaseUser = try document.data(as: FirebaseUser.self)
-                        let localUser = firebaseUser.toLocalUser()
-                        
-                        // AppViewModelにログイン
-                        appViewModel.authViewModel.login(with: localUser)
+                        appViewModel.authViewModel.loginWithFirebaseUser(firebaseUser)
                         
                         print("✅ Login successful: \(firebaseUser.name)")
                         isLoggedIn = true
                         
                     } catch {
                         print("❌ User parsing error: \(error)")
-                        alertMessage = "ユーザーデータの読み込みに失敗しました"
+                        alertMessage = "fail to loading user data"
                         showAlert = true
                     }
                 }

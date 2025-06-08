@@ -51,6 +51,7 @@ struct EditUserView: View {
                         LabeledTextField(label: "Name", value: $name)
                         LabeledTextField(label: "Email", value: $email)
                         LabeledTextField(label: "Password", value: $password, isSecure: true)
+                        LabeledTextField(label: "Profile Image URL", value: $profileImageURL)
                     }
                     .padding(.horizontal, 30)
 
@@ -106,25 +107,32 @@ struct EditUserView: View {
             email = user.email
             password = user.password
             profileImageURL = user.profileImageURL
+            print("✅ Loaded current user: \(user.name)")
         }
     }
     
+    // 🔴 AppViewModelの共有FirebaseUserManagerを使用
     private func loadPreviewUser(userId: String) {
-        let firebaseUserManager = FirebaseUserManager()
-        firebaseUserManager.getUserById(userId) { user in
+        print("🔄 Loading preview user: \(userId)")
+        
+        appViewModel.loadAndSetCurrentUser(userId: userId) { user in
             DispatchQueue.main.async {
                 if let user = user {
                     self.name = user.name
                     self.email = user.email
                     self.password = user.password
                     self.profileImageURL = user.profileImageURL
+                    
                     print("✅ Preview user loaded: \(user.name)")
+                    print("🖼️ Preview profileImageURL: '\(user.profileImageURL)'")
+                    print("🔍 FirebaseUserManager currentUserId: \(self.appViewModel.firebaseUserManager.currentUserId ?? "nil")")
                 } else {
                     self.loadTestUserData(userId: userId)
                 }
             }
         }
     }
+    
     private func loadTestUserData(userId: String) {
         self.name = "Test User (\(userId.prefix(8)))"
         self.email = "test@example.com"
@@ -133,36 +141,41 @@ struct EditUserView: View {
         print("✅ Test user data loaded for preview")
     }
     
-    
     private func saveProfile() {
-        isLoading = true
-        
-
         guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             alertMessage = "Name cannot be empty"
             showAlert = true
-            isLoading = false
             return
         }
         
         guard !email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             alertMessage = "Email cannot be empty"
             showAlert = true
-            isLoading = false
             return
         }
         
-
+        print("🔄 Saving profile...")
+        print("  - Name: '\(name.trimmingCharacters(in: .whitespacesAndNewlines))'")
+        print("  - Email: '\(email.trimmingCharacters(in: .whitespacesAndNewlines))'")
+        print("  - ProfileImageURL: '\(profileImageURL.trimmingCharacters(in: .whitespacesAndNewlines))'")
+        print("  - FirebaseUserManager currentUserId: \(appViewModel.firebaseUserManager.currentUserId ?? "nil")")
+        
         appViewModel.updateProfile(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
             email: email.trimmingCharacters(in: .whitespacesAndNewlines),
             profileImageURL: profileImageURL.trimmingCharacters(in: .whitespacesAndNewlines),
-            password: password
+            password: password.isEmpty ? nil : password
         )
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            isLoading = false
-            alertMessage = "Profile updated successfully!"
+        // Firebase更新結果を監視
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            if appViewModel.errorMessage.isEmpty {
+                alertMessage = "Profile updated successfully!"
+                print("✅ Profile update successful")
+            } else {
+                alertMessage = "Update failed: \(appViewModel.errorMessage)"
+                print("❌ Profile update failed: \(appViewModel.errorMessage)")
+            }
             showAlert = true
         }
     }
@@ -197,7 +210,6 @@ struct LabeledTextField: View {
         }
     }
 }
-
 
 #Preview {
     EditUserView(previewUserId: "BKkzo8JLqoCNQq4jo3yw")

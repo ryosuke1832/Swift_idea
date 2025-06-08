@@ -87,9 +87,9 @@ class AuthenticationViewModel: ObservableObject {
     }
 }
 
-// MARK: - User Extensions
-extension User {
-    var displayName: String {
-        return name.isEmpty ? "User" : name
-    }
-}
+// ✅ User Extensionを削除（UserModel.swiftに既に定義済み）
+// extension User {
+//     var displayName: String {
+//         return name.isEmpty ? "User" : name
+//     }
+// }

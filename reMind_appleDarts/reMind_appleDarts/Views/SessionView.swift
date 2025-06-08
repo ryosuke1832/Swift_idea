@@ -51,7 +51,7 @@ struct TagView: View {
 }
 
 struct SessionView: View {
-    let avatar: FirestoreAvatar?
+    let avatar: Avatar?
     
     @State private var currentStep: Int = 0
     @State private var recorded: Bool = false
@@ -60,7 +60,7 @@ struct SessionView: View {
     @State private var inputText: String = ""
     @State private var tags: [String] = []
 
-    init(avatar: FirestoreAvatar? = nil) {
+    init(avatar: Avatar? = nil) {
         self.avatar = avatar
     }
 
@@ -283,7 +283,7 @@ struct SessionView: View {
 
 struct SessionView_Previews: PreviewProvider {
     static var previews: some View {
-        let sampleAvatar = FirestoreAvatar(
+        let sampleAvatar = Avatar(
             id: "sample_avatar",
             name: "Sample Avatar",
             isDefault: true,

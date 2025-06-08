@@ -4,7 +4,7 @@ import FirebaseFirestore
 struct EditAvatarView: View {
     @Environment(\.presentationMode) var presentationMode
     
-    let originalFirestoreAvatar: FirestoreAvatar
+    let originalAvatar: Avatar 
     
     @State private var avatarName: String
     @State private var selectedLanguage: String
@@ -26,23 +26,24 @@ struct EditAvatarView: View {
     private let voiceTones = ["Gentle", "Soft", "Medium", "Warm", "Clear", "Soothing"]
     private let profileImages = ["sample_avatar", "avatar_1", "avatar_2", "avatar_3", "avatar_4"]
     
-    init(firestoreAvatar: FirestoreAvatar) {
-        self.originalFirestoreAvatar = firestoreAvatar
-        self._avatarName = State(initialValue: firestoreAvatar.name)
-        self._selectedLanguage = State(initialValue: firestoreAvatar.language)
-        self._selectedTheme = State(initialValue: firestoreAvatar.theme)
-        self._selectedVoiceTone = State(initialValue: firestoreAvatar.voiceTone)
-        self._selectedProfileImage = State(initialValue: firestoreAvatar.profileImg)
-        self._isDefault = State(initialValue: firestoreAvatar.isDefault)
+    // ✅ 修正: FirestoreAvatar → Avatar
+    init(avatar: Avatar) {
+        self.originalAvatar = avatar
+        self._avatarName = State(initialValue: avatar.name)
+        self._selectedLanguage = State(initialValue: avatar.language)
+        self._selectedTheme = State(initialValue: avatar.theme)
+        self._selectedVoiceTone = State(initialValue: avatar.voiceTone)
+        self._selectedProfileImage = State(initialValue: avatar.profileImg)
+        self._isDefault = State(initialValue: avatar.isDefault)
     }
     
     private var hasChanges: Bool {
-        avatarName != originalFirestoreAvatar.name ||
-        selectedLanguage != originalFirestoreAvatar.language ||
-        selectedTheme != originalFirestoreAvatar.theme ||
-        selectedVoiceTone != originalFirestoreAvatar.voiceTone ||
-        selectedProfileImage != originalFirestoreAvatar.profileImg ||
-        isDefault != originalFirestoreAvatar.isDefault
+        avatarName != originalAvatar.name ||
+        selectedLanguage != originalAvatar.language ||
+        selectedTheme != originalAvatar.theme ||
+        selectedVoiceTone != originalAvatar.voiceTone ||
+        selectedProfileImage != originalAvatar.profileImg ||
+        isDefault != originalAvatar.isDefault
     }
     
     private var isFormValid: Bool {
@@ -119,7 +120,6 @@ struct EditAvatarView: View {
                         .font(.system(size: 28, weight: .bold))
                         .foregroundColor(.primaryText)
 
-
                     Button(action: {
                         showingDeleteAlert = true
                     }) {
@@ -135,8 +135,8 @@ struct EditAvatarView: View {
                     .foregroundColor(.secondaryText)
             }
 
-            // Firebase画像URLがあれば表示、なければローカル画像
-            if let imageUrl = originalFirestoreAvatar.image_urls.first, !imageUrl.isEmpty {
+            // ✅ 修正: FirestoreAvatarのプロパティ名をAvatarに合わせる
+            if let imageUrl = originalAvatar.image_urls.first, !imageUrl.isEmpty {
                 AsyncImage(url: URL(string: imageUrl)) { image in
                     image
                         .resizable()
@@ -236,16 +236,12 @@ struct EditAvatarView: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(isDefault ? Color.primaryGreen.opacity(0.3) : Color.gray.opacity(0.2), lineWidth: 1)
             )
-            
-
         }
         .padding(.horizontal, 30)
     }
     
     private var actionButtonsSection: some View {
         VStack(spacing: 16) {
-
-            
             HStack(spacing: 16) {
                 Button(action: {
                     if hasChanges {
@@ -343,8 +339,8 @@ struct EditAvatarView: View {
     }
     
     private func deleteAvatar() {
-        // Firebaseから削除
-        guard let documentID = originalFirestoreAvatar.documentID else {
+        // ✅ 修正: documentIDプロパティはそのまま
+        guard let documentID = originalAvatar.documentID else {
             print("❌ Document ID not found")
             return
         }
@@ -380,8 +376,8 @@ struct EditAvatarView: View {
             "updated_at": Timestamp(date: Date())
         ]
         
-        // Firebaseを更新
-        guard let documentID = originalFirestoreAvatar.documentID else {
+        // ✅ 修正: documentIDプロパティはそのまま
+        guard let documentID = originalAvatar.documentID else {
             print("❌ Document ID not found")
             isUpdating = false
             return
@@ -404,8 +400,8 @@ struct EditAvatarView: View {
 }
 
 #Preview {
-    // サンプルFirestoreAvatar
-    let sampleFirestoreAvatar = FirestoreAvatar(
+    // ✅ 修正: サンプルデータの型をAvatarに変更
+    let sampleAvatar = Avatar(
         id: "avatar_12345",
         name: "Sample Avatar",
         isDefault: true,
@@ -427,5 +423,5 @@ struct EditAvatarView: View {
         deepfake_video_urls: []
     )
     
-    EditAvatarView(firestoreAvatar: sampleFirestoreAvatar)
+    EditAvatarView(avatar: sampleAvatar)  // ✅ 修正: firestoreAvatar → avatar
 }

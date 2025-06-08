@@ -1,17 +1,17 @@
 import SwiftUI
 
 struct EnhancedAvatarCard: View {
-    let firestoreAvatar: FirestoreAvatar
+    let avatar: Avatar
     let onEdit: (() -> Void)?
     
     @State private var showingEditView = false
     @State private var showingSessionView = false
     
     init(
-        firestoreAvatar: FirestoreAvatar,
+        avatar: Avatar,
         onEdit: (() -> Void)? = nil
     ) {
-        self.firestoreAvatar = firestoreAvatar
+        self.avatar = avatar
         self.onEdit = onEdit
     }
     
@@ -29,7 +29,7 @@ struct EnhancedAvatarCard: View {
                 .overlay(
                     HStack(spacing: 20) {
                         // Avatar image
-                        if let imageUrl = firestoreAvatar.image_urls.first, !imageUrl.isEmpty {
+                        if let imageUrl = avatar.image_urls.first, !imageUrl.isEmpty {
                             AsyncImage(url: URL(string: imageUrl)) { image in
                                 image
                                     .resizable()
@@ -51,10 +51,10 @@ struct EnhancedAvatarCard: View {
                         // Text content
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
-                                Text(firestoreAvatar.name)
+                                Text(avatar.name)
                                     .font(.system(size: 20, weight: .semibold))
                                     .foregroundColor(.primaryText)
-                                if firestoreAvatar.isDefault {
+                                if avatar.isDefault {
                                     Text("Default")
                                         .font(.system(size: 11, weight: .bold))
                                         .foregroundColor(.white)
@@ -65,7 +65,7 @@ struct EnhancedAvatarCard: View {
                                 }
                             }
                             
-                            Text(firestoreAvatar.displayDescription)
+                            Text(avatar.displayDescription)
                                 .font(.system(size: 13))
                                 .foregroundColor(Color(red: 0.39, green: 0.45, blue: 0.55))
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -93,13 +93,11 @@ struct EnhancedAvatarCard: View {
                     .padding(.vertical, 16)
                 )
         }
-        .buttonStyle(PlainButtonStyle())
         .fullScreenCover(isPresented: $showingSessionView) {
-            // Avatarデータを渡してSessionViewを起動
-            SessionView(avatar: firestoreAvatar)
+            SessionView(avatar: avatar)
         }
         .sheet(isPresented: $showingEditView) {
-            EditAvatarView(firestoreAvatar: firestoreAvatar)
+            EditAvatarView(avatar: avatar)
                 .environmentObject(AppViewModel())
         }
     }
@@ -107,7 +105,7 @@ struct EnhancedAvatarCard: View {
 
 struct UpdatedAvatarCard_Previews: PreviewProvider {
     static var previews: some View {
-        let sampleFirestoreAvatar = FirestoreAvatar(
+        let sampleFirestoreAvatar = Avatar(
             id: "avatar_12345",
             name: "Bob",
             isDefault: true,
@@ -132,7 +130,7 @@ struct UpdatedAvatarCard_Previews: PreviewProvider {
             ]
         )
         
-        EnhancedAvatarCard(firestoreAvatar: sampleFirestoreAvatar)
+        EnhancedAvatarCard(avatar: sampleFirestoreAvatar)
             .previewLayout(.sizeThatFits)
             .padding()
             .background(Color.white)

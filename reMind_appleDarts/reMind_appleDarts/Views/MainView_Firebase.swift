@@ -89,24 +89,24 @@ struct MainView_Firebase: View {
                     
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            ForEach(firebaseAvatarManager.firestoreAvatars, id: \.id) { firestoreAvatar in
-                                if firestoreAvatar.status == "ready" {
+                            ForEach(firebaseAvatarManager.avatars, id: \.id) { avatar in
+                                if avatar.status == "ready" {
                                     EnhancedAvatarCard(
-                                        firestoreAvatar: firestoreAvatar,
+                                        avatar: avatar,
                                     )
                                     .transition(.asymmetric(
                                         insertion: .opacity.combined(with: .slide),
                                         removal: .opacity.combined(with: .scale(scale: 0.8))
                                     ))
                                 } else {
-                                    PendingCard(avatarName: firestoreAvatar.recipient_name)
+                                    PendingCard(avatarName: avatar.recipient_name)
                                         .transition(.asymmetric(
                                             insertion: .opacity.combined(with: .slide),
                                             removal: .opacity.combined(with: .scale(scale: 0.8))
                                         ))
                                 }
                             }
-                            if firebaseAvatarManager.firestoreAvatars.isEmpty &&
+                            if firebaseAvatarManager.avatars.isEmpty &&
                                !firebaseAvatarManager.isLoading {
                                 EmptyAvatarStateView()
                                     .padding(.vertical, 40)
@@ -132,7 +132,7 @@ struct MainView_Firebase: View {
     }
     
     private var avatarCountDescription: String {
-        let firebaseCount = firebaseAvatarManager.firestoreAvatars.count
+        let firebaseCount = firebaseAvatarManager.avatars.count
         
         if firebaseCount == 0 {
             return "No support companions yet"

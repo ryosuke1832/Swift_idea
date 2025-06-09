@@ -2,10 +2,9 @@ import Foundation
 import FirebaseFirestore
 import Combine
 
-// FirestoreAvatar → Avatar に型名変更するだけ
 class FirebaseAvatarManager: ObservableObject {
-    @Published var avatars: [Avatar] = []  // ✅ FirestoreAvatar → Avatar
-    @Published var firestoreAvatars: [Avatar] = []  // ✅ 同じく変更
+    @Published var avatars: [Avatar] = []
+    @Published var firestoreAvatars: [Avatar] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String = ""
     
@@ -20,12 +19,12 @@ class FirebaseAvatarManager: ObservableObject {
         listener?.remove()
     }
     
-    // Firebaseからアバターを取得
+
     func fetchAvatars() {
         isLoading = true
         errorMessage = ""
         
-        listener?.remove() // 既存のリスナーを削除
+        listener?.remove()
         
         listener = db.collection("avatars")
             .order(by: "created_at", descending: true)
@@ -35,19 +34,19 @@ class FirebaseAvatarManager: ObservableObject {
                     self?.isLoading = false
                     
                     if let error = error {
-                        self?.errorMessage = "データの取得に失敗しました: \(error.localizedDescription)"
+                        self?.errorMessage = "Firebase fetch error: \(error.localizedDescription)"
                         print("❌ Firebase fetch error: \(error)")
                         return
                     }
                     
                     guard let documents = querySnapshot?.documents else {
-                        self?.errorMessage = "データが見つかりませんでした"
+                        self?.errorMessage = "Firebase fetch error"
                         return
                     }
                     
-                    let avatars = documents.compactMap { document -> Avatar? in  // ✅ Avatar型
+                    let avatars = documents.compactMap { document -> Avatar? in
                         do {
-                            return try document.data(as: Avatar.self)  // ✅ Avatar型
+                            return try document.data(as: Avatar.self)
                         } catch {
                             print("❌ Document parsing error: \(error)")
                             return nil
@@ -55,14 +54,14 @@ class FirebaseAvatarManager: ObservableObject {
                     }
                     
                     self?.firestoreAvatars = avatars
-                    self?.avatars = avatars  // ✅ 変換不要！同じ型
+                    self?.avatars = avatars
                     
-                    print("✅ Firebaseから\(self?.avatars.count ?? 0)個のアバターを取得しました")
+                    print("✅ From Firebase get \(self?.avatars.count ?? 0) avatars")
                 }
             }
     }
     
-    // 他のメソッドもAvatar型に変更
+
     func saveAvatar(_ avatar: Avatar) {
         var avatarToSave = avatar
         if avatarToSave.created_at == nil {
@@ -78,34 +77,32 @@ class FirebaseAvatarManager: ObservableObject {
             }
         } catch {
             DispatchQueue.main.async {
-                self.errorMessage = "保存に失敗しました: \(error.localizedDescription)"
+                self.errorMessage = "fail to save: \(error.localizedDescription)"
             }
         }
     }
     
-    func deleteAvatar(_ avatar: Avatar) {  // ✅ Avatar型
+    func deleteAvatar(_ avatar: Avatar) {
         guard let documentID = avatar.documentID else {
-            errorMessage = "削除対象のアバターが見つかりません"
+            errorMessage = "cannot find documentID"
             return
         }
         
         db.collection("avatars").document(documentID).delete { [weak self] error in
             DispatchQueue.main.async {
                 if let error = error {
-                    self?.errorMessage = "削除に失敗しました: \(error.localizedDescription)"
+                    self?.errorMessage = "fail to delete: \(error.localizedDescription)"
                 } else {
-                    print("✅ アバター削除完了")
+                    print("comlete delete avatar")
                 }
             }
         }
     }
     
-    // リフレッシュ
     func refresh() {
         fetchAvatars()
     }
     
-    // エラーをクリア
     func clearError() {
         errorMessage = ""
     }

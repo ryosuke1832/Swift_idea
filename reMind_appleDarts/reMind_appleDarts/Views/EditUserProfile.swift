@@ -51,7 +51,6 @@ struct EditUserView: View {
                         LabeledTextField(label: "Name", value: $name)
                         LabeledTextField(label: "Email", value: $email)
                         LabeledTextField(label: "Password", value: $password, isSecure: true)
-                        LabeledTextField(label: "Profile Image URL", value: $profileImageURL)
                     }
                     .padding(.horizontal, 30)
 

@@ -234,12 +234,10 @@ struct SessionView: View {
                                 Button(action: {
                                     if currentStep < prompts.count - 1 {
                                         currentStep += 1
-                                        // ステップが変わるとcurrentVideoURLが自動的に更新される
                                         recorded = false
                                         inputText = ""
                                         tags.removeAll()
                                         
-                                        // デバッグ：現在の動画URLを出力
                                         print("🎬 Step \(currentStep): Playing video[\(min(currentStep, avatar?.deepfake_video_urls.count ?? 1) - 1)] = \(currentVideoURL)")
                                     } else {
                                         navigateToBreak = true

@@ -124,16 +124,14 @@ extension User {
         return name.isEmpty ? "User" : name
     }
     
-    // 🆕 プロフィール画像の取得ロジック（Firebase URLのみ）
     var displayProfileImageURL: String {
         if !profileImageURL.isEmpty {
             return profileImageURL
         }
-        // フォールバック：デフォルトのプレースホルダー画像URL
         return "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png"
     }
     
-    // 🆕 有効な画像URLがあるかどうか
+
     var hasValidProfileImage: Bool {
         return !profileImageURL.isEmpty && isValidURL(profileImageURL)
     }

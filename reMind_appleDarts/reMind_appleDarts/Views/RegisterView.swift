@@ -3,6 +3,7 @@ import FirebaseFirestore
 
 struct RegisterView: View {
     @EnvironmentObject var appViewModel: AppViewModel
+    @State private var isRegistered = false
     @State private var name = ""
     @State private var email = ""
     @State private var password = ""
@@ -14,109 +15,112 @@ struct RegisterView: View {
     private var db = Firestore.firestore()
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                BackGroundView()
+        ZStack {
+            BackGroundView()
 
-                VStack(spacing: 24) {
-                    Spacer()
+            VStack(spacing: 24) {
+                Spacer()
 
-                    Text("Register")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(.black)
+                Text("Register")
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundColor(.black)
 
-                    Text("Let's get you started")
-                        .font(.subheadline)
-                        .foregroundColor(.gray)
+                Text("Let's get you started")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
 
-                    VStack(alignment: .leading, spacing: 16) {
-                        VStack(alignment: .leading) {
-                            Text("Name")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                            TextField("Name", text: $name)
-                                .padding()
-                                .background(Color.white)
-                                .cornerRadius(8)
-                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
-                        }
-
-                        VStack(alignment: .leading) {
-                            Text("Email")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-                            TextField("Email", text: $email)
-                                .autocapitalization(.none)
-                                .keyboardType(.emailAddress)
-                                .padding()
-                                .background(Color.white)
-                                .cornerRadius(8)
-                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
-                        }
-
-                        VStack(alignment: .leading) {
-                            Text("Password")
-                                .font(.subheadline)
-                                .foregroundColor(.gray)
-
-                            HStack {
-                                Group {
-                                    if isPasswordVisible {
-                                        TextField("Password", text: $password)
-                                    } else {
-                                        SecureField("Password", text: $password)
-                                    }
-                                }
-                                .padding(.vertical, 12)
-                                .padding(.leading, 16)
-
-                                Button(action: {
-                                    isPasswordVisible.toggle()
-                                }) {
-                                    Image(systemName: isPasswordVisible ? "eye.fill" : "eye.slash.fill")
-                                        .foregroundColor(.gray)
-                                }
-                                .padding(.trailing, 16)
-                            }
+                VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading) {
+                        Text("Name")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        TextField("Name", text: $name)
+                            .padding()
                             .background(Color.white)
                             .cornerRadius(8)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(Color.gray.opacity(0.3))
-                            )
-                        }
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
                     }
-                    .padding(.horizontal, 30)
 
-                    Spacer()
+                    VStack(alignment: .leading) {
+                        Text("Email")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                        TextField("Email", text: $email)
+                            .autocapitalization(.none)
+                            .keyboardType(.emailAddress)
+                            .padding()
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.3)))
+                    }
 
-                    Button(action: handleRegister) {
+                    VStack(alignment: .leading) {
+                        Text("Password")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+
                         HStack {
-                            if isRegistering {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .foregroundColor(.black)
+                            Group {
+                                if isPasswordVisible {
+                                    TextField("Password", text: $password)
+                                } else {
+                                    SecureField("Password", text: $password)
+                                }
                             }
-                            Text(isRegistering ? "Registering..." : "Register")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(Color.primaryGreen)
-                        .foregroundColor(.black)
-                        .cornerRadius(15)
-                        .font(.headline)
-                        .opacity(isFormValid ? 1.0 : 0.5)
-                    }
-                    .padding(.horizontal, 30)
-                    .disabled(!isFormValid || isRegistering)
+                            .padding(.vertical, 12)
+                            .padding(.leading, 16)
 
-                    Spacer()
+                            Button(action: {
+                                isPasswordVisible.toggle()
+                            }) {
+                                Image(systemName: isPasswordVisible ? "eye.fill" : "eye.slash.fill")
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.trailing, 16)
+                        }
+                        .background(Color.white)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3))
+                        )
+                    }
                 }
-                .alert("Registration", isPresented: $showAlert) {
-                    Button("OK") { }
-                } message: {
-                    Text(alertMessage)
+                .padding(.horizontal, 30)
+
+                Spacer()
+
+                Button(action: handleRegister) {
+                    HStack {
+                        if isRegistering {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .foregroundColor(.black)
+                        }
+                        Text(isRegistering ? "Registering..." : "Register")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+                    .background(Color.primaryGreen)
+                    .foregroundColor(.black)
+                    .cornerRadius(15)
+                    .font(.headline)
+                    .opacity(isFormValid ? 1.0 : 0.5)
                 }
+                .padding(.horizontal, 30)
+                .disabled(!isFormValid || isRegistering)
+
+                Spacer()
+            }
+            .navigationDestination(isPresented: $isRegistered) {
+                TutorialView()
+                    .environmentObject(appViewModel)
+            }
+            .alert("Registration", isPresented: $showAlert) {
+                Button("OK") {
+                }
+            } message: {
+                Text(alertMessage)
             }
         }
     }
@@ -135,7 +139,7 @@ struct RegisterView: View {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         
         guard isFormValid else {
-            alertMessage = "input all informaton"
+            alertMessage = "input all information"
             showAlert = true
             return
         }
@@ -172,8 +176,9 @@ struct RegisterView: View {
                         
                         appViewModel.authViewModel.loginWithFirebaseUser(firebaseUser)
                         
-                        // 🆕 登録成功時は状態変更のみ（ContentViewが自動的にチュートリアルを表示）
-                        print("✅ Registration completed - will show tutorial")
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            isRegistered = true
+                        }
                     }
                 }
             }

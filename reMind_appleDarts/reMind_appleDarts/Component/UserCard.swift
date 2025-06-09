@@ -45,10 +45,11 @@ struct UserCard: View {
             Spacer()
             
         }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
 
     }
     
-    // 🔴 computed property で URL を決定
     private var finalImageURL: String {
         let result = profileImageURL.isEmpty ? defaultProfileImageURL : profileImageURL
         print("🖼️ finalImageURL computed: '\(result)'")

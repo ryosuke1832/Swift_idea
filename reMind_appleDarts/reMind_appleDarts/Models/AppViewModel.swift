@@ -5,10 +5,8 @@ import Combine
 class AppViewModel: ObservableObject {
     @Published var authViewModel: AuthenticationViewModel
     
-    // 🔴 共有FirebaseUserManagerインスタンス
     @Published var firebaseUserManager = FirebaseUserManager()
     
-    // 🆕 チュートリアル状態管理
     @Published var hasCompletedTutorial: Bool = UserDefaults.standard.bool(forKey: "hasCompletedTutorial")
     
     private var cancellables = Set<AnyCancellable>()
@@ -16,12 +14,11 @@ class AppViewModel: ObservableObject {
     init() {
         self.authViewModel = AuthenticationViewModel()
         
-        // 🔴 AuthenticationViewModelに共有インスタンスを設定
         self.authViewModel.setFirebaseUserManager(firebaseUserManager)
         
         setupUserObserver()
         
-        // 🆕 チュートリアル状態の変更を監視
+
         setupTutorialObserver()
     }
     
@@ -43,7 +40,7 @@ class AppViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    // 🆕 チュートリアル状態の監視
+
     private func setupTutorialObserver() {
         $hasCompletedTutorial
             .sink { completed in
@@ -78,7 +75,6 @@ class AppViewModel: ObservableObject {
         return authViewModel.errorMessage
     }
     
-    // 🆕 アプリの初期表示状態を判定
     var shouldShowOnboarding: Bool {
         return !isLoggedIn
     }
@@ -119,7 +115,6 @@ class AppViewModel: ObservableObject {
     
     func logout() {
         authViewModel.logout()
-        // 🆕 ログアウト時はチュートリアルをリセットしない（ユーザー固有の情報として保持）
     }
     
     func updateProfile(name: String? = nil, email: String? = nil, profileImageURL: String? = nil, password: String? = nil) {
@@ -135,7 +130,7 @@ class AppViewModel: ObservableObject {
         authViewModel.updateUserProfile(profileImageURL: url)
     }
     
-    // 🔴 共有FirebaseUserManagerへの直接アクセスメソッド
+
     func loadAndSetCurrentUser(userId: String, completion: @escaping (User?) -> Void) {
         firebaseUserManager.loadAndSetCurrentUser(userId: userId) { [weak self] user in
             DispatchQueue.main.async {

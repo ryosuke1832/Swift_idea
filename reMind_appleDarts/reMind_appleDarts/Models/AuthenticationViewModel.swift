@@ -6,15 +6,15 @@ class AuthenticationViewModel: ObservableObject {
     @Published var isLoggedIn: Bool = false
     @Published var isLoading: Bool = false
     
-    // 🔴 共有FirebaseUserManagerへの参照
+
     private var firebaseUserManager: FirebaseUserManager?
     private var cancellables = Set<AnyCancellable>()
     
     init() {
-        // firebaseUserManagerは後でsetFirebaseUserManagerで設定される
+
     }
     
-    // 🔴 共有FirebaseUserManagerを設定
+
     func setFirebaseUserManager(_ manager: FirebaseUserManager) {
         self.firebaseUserManager = manager
         setupUserObserver()
@@ -50,7 +50,6 @@ class AuthenticationViewModel: ObservableObject {
         self.currentUser = localUser
         self.isLoggedIn = true
         
-        // FirebaseUserManagerにもログイン状態を設定
         firebaseUserManager?.currentUser = localUser
         firebaseUserManager?.currentUserId = firebaseUser.id
         

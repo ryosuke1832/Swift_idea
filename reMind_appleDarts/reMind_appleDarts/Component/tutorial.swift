@@ -13,6 +13,7 @@ struct TutorialPage {
 struct TutorialView: View {
     @EnvironmentObject var appViewModel: AppViewModel
     @State private var currentPage = 0
+    @State private var navigateToMain = false
 
     private let pages: [TutorialPage] = [
         .init(imageName: "tut1", title: "Set-up your avatar with your loved ones", subtitle: "Just a few simple steps to get started!", buttonTitle: "Next"),
@@ -25,7 +26,8 @@ struct TutorialView: View {
             page: pages[currentPage],
             currentPage: currentPage,
             totalPages: pages.count
-        ) {
+        )
+        {
             if currentPage < pages.count - 1 {
                 currentPage += 1
             } else {

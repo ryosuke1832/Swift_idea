@@ -112,7 +112,6 @@ struct RequestConsentView: View {
         let baseURL = "https://remind-f54ef.web.app"
         let createURL = "\(baseURL)/?avatarId=\(avatarId)"
         
-        // 必要なフィールドのみでアバターデータを作成
         let avatarData = createAvatarData(
             avatarId: avatarId,
             recipientName: trimmedRecipientName,
@@ -120,7 +119,6 @@ struct RequestConsentView: View {
             createURL: createURL
         )
         
-        // Firestoreに保存
         db.collection("avatars").document(avatarId).setData(avatarData) { [self] error in
             DispatchQueue.main.async {
                 isCreating = false
@@ -152,7 +150,6 @@ struct RequestConsentView: View {
         createURL: String
     ) -> [String: Any] {
         return [
-            // 基本識別
             "id": avatarId,
             "name": recipientName, //             "isDefault": false,
             "language": "English",

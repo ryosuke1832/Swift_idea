@@ -11,10 +11,9 @@ class FirebaseUserManager: ObservableObject {
     private var listener: ListenerRegistration?
     private let userCollectionPath = "users"
     
-    // セッション管理用
+
     @Published var currentUserId: String? {
         didSet {
-            // currentUserIdが変更されたらUserDefaultsに保存
             if let userId = currentUserId {
                 UserDefaults.standard.set(userId, forKey: "currentUserId")
                 print("💾 Saved currentUserId to UserDefaults: \(userId)")
@@ -26,7 +25,6 @@ class FirebaseUserManager: ObservableObject {
     }
     
     init() {
-        // 🆕 アプリ起動時に保存されたユーザーIDを復元
         self.currentUserId = UserDefaults.standard.string(forKey: "currentUserId")
         if let savedUserId = currentUserId {
             print("🔄 Found saved user ID: \(savedUserId)")
@@ -53,7 +51,7 @@ class FirebaseUserManager: ObservableObject {
                         self?.isLoading = false
                         
                         if let error = error {
-                            self?.errorMessage = "ユーザー保存に失敗: \(error.localizedDescription)"
+                            self?.errorMessage = "Firebase user save error: \(error.localizedDescription)"
                             print("❌ Firebase user save error: \(error)")
                         } else {
                             print("✅ User saved to Firebase: \(firebaseUser.id)")
@@ -65,7 +63,7 @@ class FirebaseUserManager: ObservableObject {
         } catch {
             DispatchQueue.main.async {
                 self.isLoading = false
-                self.errorMessage = "ユーザーデータの変換に失敗: \(error.localizedDescription)"
+                self.errorMessage = "Error: \(error.localizedDescription)"
             }
         }
     }
@@ -85,7 +83,7 @@ class FirebaseUserManager: ObservableObject {
                     self?.isLoading = false
                     
                     if let error = error {
-                        self?.errorMessage = "ユーザー読み込みに失敗: \(error.localizedDescription)"
+                        self?.errorMessage = "Firebase user load error: \(error.localizedDescription)"
                         print("❌ Firebase user load error: \(error)")
                         return
                     }
@@ -104,14 +102,13 @@ class FirebaseUserManager: ObservableObject {
                         print("✅ User loaded from Firebase: \(firebaseUser.name)")
                         print("🖼️ Profile image URL: \(firebaseUser.profileImageURL)")
                     } catch {
-                        self?.errorMessage = "ユーザーデータの解析に失敗: \(error.localizedDescription)"
+                        self?.errorMessage = "User parsing error \(error.localizedDescription)"
                         print("❌ User parsing error: \(error)")
                     }
                 }
             }
     }
     
-    // 🔴 デバッグログ付きupdateUser
     func updateUser(_ updatedUser: User) {
         print("🔄 updateUser called")
         print("  - currentUserId: \(currentUserId ?? "nil")")
@@ -119,7 +116,7 @@ class FirebaseUserManager: ObservableObject {
         print("  - updatedUser.profileImageURL: '\(updatedUser.profileImageURL)'")
         
         guard let currentUserId = currentUserId else {
-            errorMessage = "ユーザーIDが見つかりません"
+            errorMessage = "currentUserId is nil - cannot update user"
             print("❌ currentUserId is nil - cannot update user")
             return
         }
@@ -144,7 +141,7 @@ class FirebaseUserManager: ObservableObject {
                     self?.isLoading = false
                     
                     if let error = error {
-                        self?.errorMessage = "ユーザー更新に失敗: \(error.localizedDescription)"
+                        self?.errorMessage = "Firebase user update error: \(error.localizedDescription)"
                         print("❌ Firebase user update error: \(error)")
                     } else {
                         print("✅ User updated in Firebase successfully")
@@ -198,7 +195,6 @@ class FirebaseUserManager: ObservableObject {
         return currentUser
     }
     
-    // 🔴 getUserByIdでcurrentUserIdも設定する
     func getUserById(_ userId: String, completion: @escaping (User?) -> Void) {
         print("🔍 Getting user by ID: \(userId)")
         
@@ -222,7 +218,7 @@ class FirebaseUserManager: ObservableObject {
                     let firebaseUser = try document.data(as: FirebaseUser.self)
                     let localUser = firebaseUser.toLocalUser()
                     
-                    // 🔴 重要: currentUserIdを設定
+    
                     DispatchQueue.main.async {
                         self?.currentUserId = userId
                         print("✅ Set currentUserId to: \(userId)")
@@ -238,7 +234,6 @@ class FirebaseUserManager: ObservableObject {
             }
     }
     
-    // 🔴 新しいメソッド: ユーザーを読み込んでセッションを設定
     func loadAndSetCurrentUser(userId: String, completion: @escaping (User?) -> Void) {
         getUserById(userId) { [weak self] user in
             DispatchQueue.main.async {

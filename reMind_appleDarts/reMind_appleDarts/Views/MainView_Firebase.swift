@@ -17,12 +17,13 @@ struct MainView_Firebase: View {
     }
     
     var body: some View {
-        NavigationView {
             ZStack{
                 // Background
                 BackGroundView()
                 
                 VStack(spacing: 15){
+                    Spacer()
+                        .frame(height: 20)
                     UserCard(
                         welcomeText: "Welcome \(displayName)!",
                         descriptionText: avatarCountDescription,
@@ -141,7 +142,7 @@ struct MainView_Firebase: View {
                     
                     Spacer()
                 }
-            }
+            
         }
         .onAppear {
             loadUserData()
@@ -178,13 +179,10 @@ struct MainView_Firebase: View {
                     
                     appViewModel.authViewModel.currentUser = user
                     appViewModel.authViewModel.isLoggedIn = true
-                    
-                    print("✅ Preview user loaded: \(user.name)")
-                    print("🖼️ Preview user profileImageURL: '\(user.profileImageURL)'")
                 } else {
                     displayName = "Test User (\(userId.prefix(8)))"
                     displayProfileImageURL = "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png"
-                    print("⚠️ Failed to load user \(userId), using fallback")
+                    
                 }
             }
         }

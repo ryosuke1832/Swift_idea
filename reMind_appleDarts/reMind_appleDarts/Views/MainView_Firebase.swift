@@ -11,19 +11,18 @@ struct MainView_Firebase: View {
     @State private var displayName: String = "User"
     @State private var displayProfileImageURL: String = ""
     @State private var isLoadingUser: Bool = false
+    @State private var currentUserId: String? // 🆕 現在のユーザーIDを保持
     
     init(previewUserId: String? = nil) {
         self.previewUserId = previewUserId
     }
     
     var body: some View {
+        NavigationView {
             ZStack{
-                // Background
                 BackGroundView()
                 
                 VStack(spacing: 15){
-                    Spacer()
-                        .frame(height: 20)
                     UserCard(
                         welcomeText: "Welcome \(displayName)!",
                         descriptionText: avatarCountDescription,
@@ -43,7 +42,6 @@ struct MainView_Firebase: View {
                     
                     Spacer()
                     
-                    // Add button and heading of List
                     HStack {
                         Text("Your support circle")
                             .font(.headline)
@@ -54,7 +52,7 @@ struct MainView_Firebase: View {
                                 .environmentObject(appViewModel)
                                 .onDisappear {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                        refreshView()
+                                        refreshAvatars()
                                     }
                                 }
                             ) {
@@ -63,9 +61,8 @@ struct MainView_Firebase: View {
                                     .foregroundColor(.blue)
                             }
                             
-                            // Refresh button
                             Button(action: {
-                                firebaseAvatarManager.refresh()
+                                refreshAvatars()
                             }) {
                                 Image(systemName: "arrow.clockwise")
                                     .foregroundColor(.blue)
@@ -76,7 +73,6 @@ struct MainView_Firebase: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 0)
                     
-                    // Error message
                     if !firebaseAvatarManager.errorMessage.isEmpty {
                         HStack {
                             Image(systemName: "exclamationmark.triangle")
@@ -97,7 +93,6 @@ struct MainView_Firebase: View {
                         .padding(.horizontal)
                     }
                     
-                    // Loading indicator
                     if firebaseAvatarManager.isLoading {
                         HStack {
                             ProgressView()
@@ -137,19 +132,48 @@ struct MainView_Firebase: View {
                     }
                     .id(refreshTrigger)
                     .refreshable {
-                        firebaseAvatarManager.refresh()
+                        refreshAvatars()
                     }
                     
                     Spacer()
                 }
-            
+            }
         }
         .onAppear {
             loadUserData()
-            firebaseAvatarManager.refresh()
+            loadAvatars() // 🆕 ユーザーデータロード後にアバターを取得
         }
         .onReceive(firebaseAvatarManager.$avatars) { _ in
             refreshView()
+        }
+    }
+    
+    // 🆕 アバターを読み込む
+    private func loadAvatars() {
+        if let userId = getCurrentUserId() {
+            firebaseAvatarManager.fetchAvatarsForUser(userId: userId)
+        } else {
+            print("⚠️ No user ID available for loading avatars")
+        }
+    }
+    
+    // 🆕 アバターをリフレッシュ
+    private func refreshAvatars() {
+        if let userId = getCurrentUserId() {
+            firebaseAvatarManager.refresh(for: userId)
+        } else {
+            print("⚠️ No user ID available for refreshing avatars")
+        }
+    }
+    
+    // 🆕 現在のユーザーIDを取得
+    private func getCurrentUserId() -> String? {
+        if let previewUserId = previewUserId {
+            return previewUserId
+        } else if let userId = appViewModel.firebaseUserManager.currentUserId {
+            return userId
+        } else {
+            return currentUserId
         }
     }
     
@@ -159,7 +183,9 @@ struct MainView_Firebase: View {
         } else if let user = appViewModel.authViewModel.currentUser {
             displayName = user.name
             displayProfileImageURL = user.profileImageURL
+            currentUserId = appViewModel.firebaseUserManager.currentUserId
             print("✅ Loaded user from appViewModel: \(user.name)")
+            print("🔑 Current user ID: \(currentUserId ?? "nil")")
         } else {
             print("⚠️ No user found in appViewModel")
         }
@@ -167,6 +193,8 @@ struct MainView_Firebase: View {
     
     private func loadPreviewUser(userId: String) {
         isLoadingUser = true
+        currentUserId = userId // 🆕 プレビューユーザーIDを保存
+        
         let firebaseUserManager = FirebaseUserManager()
         
         firebaseUserManager.getUserById(userId) { user in
@@ -179,10 +207,16 @@ struct MainView_Firebase: View {
                     
                     appViewModel.authViewModel.currentUser = user
                     appViewModel.authViewModel.isLoggedIn = true
+                    
+                    print("✅ Preview user loaded: \(user.name)")
+                    print("🔑 Preview user ID: \(userId)")
+                    
+                    // プレビューユーザーのアバターを取得
+                    self.loadAvatars()
                 } else {
                     displayName = "Test User (\(userId.prefix(8)))"
                     displayProfileImageURL = "https://res.cloudinary.com/dvyjkf3xq/image/upload/v1749361609/initial_profile_zfoxw0.png"
-                    
+                    print("⚠️ Failed to load user \(userId), using fallback")
                 }
             }
         }
@@ -216,6 +250,7 @@ struct MainView_Firebase: View {
         }
     }
 }
+
 #Preview("With Specific User") {
     MainView_Firebase(previewUserId: "BKkzo8JLqoCNQq4jo3yw")
         .environmentObject(AppViewModel())

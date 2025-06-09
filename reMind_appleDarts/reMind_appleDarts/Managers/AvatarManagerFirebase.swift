@@ -12,35 +12,100 @@ class FirebaseAvatarManager: ObservableObject {
     private var listener: ListenerRegistration?
     
     init() {
-        fetchAvatars()
+        // 初期化時は何もしない
     }
     
     deinit {
         listener?.remove()
     }
     
-
-    func fetchAvatars() {
+    // 🆕 ユーザーIDを指定してそのユーザーのアバターを取得
+    func fetchAvatarsForUser(userId: String) {
+        print("🔍 Fetching avatars for user: \(userId)")
+        
         isLoading = true
         errorMessage = ""
         
-        listener?.remove()
+        // まずユーザードキュメントからavatar_idsを取得
+        db.collection("users")
+            .document(userId)
+            .getDocument { [weak self] documentSnapshot, error in
+                if let error = error {
+                    DispatchQueue.main.async {
+                        self?.isLoading = false
+                        self?.errorMessage = "ユーザー情報の取得に失敗: \(error.localizedDescription)"
+                        print("❌ Error fetching user: \(error)")
+                    }
+                    return
+                }
+                
+                guard let document = documentSnapshot,
+                      document.exists,
+                      let data = document.data() else {
+                    DispatchQueue.main.async {
+                        self?.isLoading = false
+                        self?.avatars = []
+                        self?.firestoreAvatars = []
+                        print("⚠️ User document not found or no data")
+                    }
+                    return
+                }
+                
+                // avatar_idsを取得
+                let avatarIds = data["avatar_ids"] as? [String] ?? []
+                print("✅ Found avatar_ids: \(avatarIds)")
+                
+                if avatarIds.isEmpty {
+                    DispatchQueue.main.async {
+                        self?.isLoading = false
+                        self?.avatars = []
+                        self?.firestoreAvatars = []
+                        print("⚠️ No avatar IDs found for user")
+                    }
+                    return
+                }
+                
+                // アバターIDを使ってアバターデータを取得
+                self?.fetchAvatarsByIds(avatarIds)
+            }
+    }
+    
+    // アバターIDの配列からアバターデータを取得
+    private func fetchAvatarsByIds(_ avatarIds: [String]) {
+        print("🔍 Fetching avatars by IDs: \(avatarIds)")
         
-        listener = db.collection("avatars")
-            .order(by: "created_at", descending: true)
-            .limit(to: 50)
-            .addSnapshotListener { [weak self] querySnapshot, error in
-                DispatchQueue.main.async {
-                    self?.isLoading = false
+        guard !avatarIds.isEmpty else {
+            DispatchQueue.main.async {
+                self.isLoading = false
+                self.avatars = []
+                self.firestoreAvatars = []
+            }
+            return
+        }
+        
+        // Firestoreの'in'クエリを使用（最大10個まで）
+        let chunks = avatarIds.chunked(into: 10)
+        var allAvatars: [Avatar] = []
+        let group = DispatchGroup()
+        
+        for chunk in chunks {
+            group.enter()
+            
+            db.collection("avatars")
+                .whereField("id", in: chunk)
+                .getDocuments { [weak self] querySnapshot, error in
+                    defer { group.leave() }
                     
                     if let error = error {
-                        self?.errorMessage = "Firebase fetch error: \(error.localizedDescription)"
                         print("❌ Firebase fetch error: \(error)")
+                        DispatchQueue.main.async {
+                            self?.errorMessage = "アバターデータの取得に失敗: \(error.localizedDescription)"
+                        }
                         return
                     }
                     
                     guard let documents = querySnapshot?.documents else {
-                        self?.errorMessage = "Firebase fetch error"
+                        print("⚠️ No documents found for chunk: \(chunk)")
                         return
                     }
                     
@@ -53,57 +118,49 @@ class FirebaseAvatarManager: ObservableObject {
                         }
                     }
                     
-                    self?.firestoreAvatars = avatars
-                    self?.avatars = avatars
-                    
-                    print("✅ From Firebase get \(self?.avatars.count ?? 0) avatars")
+                    allAvatars.append(contentsOf: avatars)
+                    print("✅ Fetched \(avatars.count) avatars from chunk")
                 }
-            }
-    }
-    
-
-    func saveAvatar(_ avatar: Avatar) {
-        var avatarToSave = avatar
-        if avatarToSave.created_at == nil {
-            avatarToSave.created_at = Timestamp(date: Date())
-        }
-        avatarToSave.updated_at = Timestamp(date: Date())
-        
-        do {
-            if let documentID = avatar.documentID {
-                try db.collection("avatars").document(documentID).setData(from: avatarToSave)
-            } else {
-                try db.collection("avatars").addDocument(from: avatarToSave)
-            }
-        } catch {
-            DispatchQueue.main.async {
-                self.errorMessage = "fail to save: \(error.localizedDescription)"
-            }
-        }
-    }
-    
-    func deleteAvatar(_ avatar: Avatar) {
-        guard let documentID = avatar.documentID else {
-            errorMessage = "cannot find documentID"
-            return
         }
         
-        db.collection("avatars").document(documentID).delete { [weak self] error in
-            DispatchQueue.main.async {
-                if let error = error {
-                    self?.errorMessage = "fail to delete: \(error.localizedDescription)"
-                } else {
-                    print("comlete delete avatar")
-                }
+        group.notify(queue: .main) { [weak self] in
+            self?.isLoading = false
+            
+            // IDの順序を保持してソート
+            let sortedAvatars = avatarIds.compactMap { id in
+                allAvatars.first { $0.id == id }
             }
+            
+            self?.firestoreAvatars = sortedAvatars
+            self?.avatars = sortedAvatars
+            
+            print("✅ Total avatars loaded: \(sortedAvatars.count)")
+            print("✅ Avatar names: \(sortedAvatars.map { $0.name })")
         }
     }
     
-    func refresh() {
-        fetchAvatars()
+    // リフレッシュ用（userIdを外部から渡す必要がある）
+    func refresh(for userId: String) {
+        fetchAvatarsForUser(userId: userId)
     }
     
     func clearError() {
         errorMessage = ""
+    }
+    
+    func clearAvatars() {
+        listener?.remove()
+        avatars = []
+        firestoreAvatars = []
+        print("🗑️ Avatars cleared")
+    }
+}
+
+// 配列を指定サイズに分割するヘルパー
+extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0..<Swift.min($0 + size, count)])
+        }
     }
 }
